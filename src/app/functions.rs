@@ -62,7 +62,7 @@ pub fn load_by(
 
     let mut ssa_fonts = if load_font_list {
         SsaFonts::load().unwrap_or_else(|_| {
-            println!("Cannot load \"fonts.txt\", ignoring");
+            eprintln!("Cannot load \"fonts.txt\", ignoring");
             SsaFonts::new()
         })
     } else {

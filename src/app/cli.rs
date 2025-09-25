@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 use std::path::PathBuf;
 
 // default mode
@@ -62,8 +62,8 @@ pub enum Commands {
         cache: Option<PathBuf>,
 
         /// Avoid translate saved paths into absolute
-        #[arg(short = 'p', long = "portable")]
-        is_relative: bool,
+        #[arg(short = 'p', long = "portable", action = ArgAction::SetFalse)]
+        is_absolute: bool,
     },
 
     /// List used fonts in (A)SSA subtitles

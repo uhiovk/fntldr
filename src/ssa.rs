@@ -131,7 +131,7 @@ impl SsaFonts {
         for dialogue in events.iter().filter(|event| event.is_dialogue()) {
             used_styles.insert(dialogue.style.to_string());
 
-            // add all inline font ovverides in the dialogue
+            // add all inline font overrides in the dialogue
             fonts.extend(
                 FONT_OVRD_REGEX.captures_iter(dialogue.text).filter_map(
                     |cap| cap.get(1).map(|m| strip_prefix(m.as_str())),

@@ -4,6 +4,7 @@ use bincode::{
     encode_into_std_write,
 };
 use memmap2::Mmap;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, create_dir_all, read_dir};
 use std::path::{Path, PathBuf, absolute};
@@ -70,15 +71,13 @@ impl FontProviders {
         is_recursive: bool,
         is_absolute: bool,
     ) {
-        let _tmp;
         let path = if is_absolute {
-            _tmp = absolute(path).unwrap();
-            &_tmp
+            Cow::from(absolute(path).unwrap())
         } else {
-            path
+            Cow::from(path)
         };
 
-        let Ok(entries) = read_dir(path) else {
+        let Ok(entries) = read_dir(&path) else {
             eprintln!("Error reading directory \"{}\"", path.display());
             return;
         };
@@ -95,7 +94,7 @@ impl FontProviders {
                 let (names, is_variable) = Self::get_font_names(&path);
                 let idx = self.files.len();
                 self.map
-                    .extend(names.iter().map(|name| (name.clone(), idx)));
+                    .extend(names.iter().cloned().map(|name| (name, idx)));
                 self.files.push(FontFile {
                     path,
                     names,

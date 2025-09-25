@@ -30,8 +30,8 @@ pub fn app() -> Result<()> {
             direct_dirs,
             recursive_dirs,
             cache,
-            is_relative,
-        } => index(direct_dirs, recursive_dirs, cache, !is_relative),
+            is_absolute,
+        } => index(direct_dirs, recursive_dirs, cache, is_absolute),
 
         Commands::List {
             direct_dirs,
