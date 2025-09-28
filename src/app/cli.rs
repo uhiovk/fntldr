@@ -19,7 +19,7 @@ pub enum Commands {
         #[arg(short, long = "dir", value_name = "DIRECTORY")]
         direct_dirs: Vec<PathBuf>,
 
-        /// Directories to be recursive scanned
+        /// Directories to be recursively scanned
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
@@ -34,7 +34,7 @@ pub enum Commands {
         #[arg(short, long = "dir", value_name = "DIRECTORY")]
         direct_dirs: Vec<PathBuf>,
 
-        /// Directories to be recursive scanned
+        /// Directories to be recursively scanned
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
@@ -53,7 +53,7 @@ pub enum Commands {
         #[arg(short, long = "dir", value_name = "DIRECTORY")]
         direct_dirs: Vec<PathBuf>,
 
-        /// Directories to be recursive scanned
+        /// Directories to be recursively scanned
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
@@ -72,7 +72,7 @@ pub enum Commands {
         #[arg(short, long = "dir", value_name = "DIRECTORY")]
         direct_dirs: Vec<PathBuf>,
 
-        /// Directories to be recursive scanned
+        /// Directories to be recursively scanned
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
