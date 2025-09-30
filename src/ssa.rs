@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Display;
-use std::fs::{create_dir_all, read_dir, read_to_string, write};
+use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::LazyLock;
@@ -11,6 +11,8 @@ use std::sync::LazyLock;
 // I definitely don't like that, but at least it has fairly nice API
 // and there is not a single crate else that follows basic SSA specs
 use ass_core::{Script, Section, parser::SectionType};
+
+use crate::utils::{is_ssa, walk_dir};
 
 pub struct SsaFonts(HashSet<String>);
 
@@ -49,45 +51,16 @@ impl SsaFonts {
     }
 
     pub fn index(&mut self, path: &Path, is_recursive: bool) {
-        let Ok(entries) = read_dir(path) else {
-            eprintln!("Error reading directory \"{}\"", path.display());
-            return;
-        };
+        let mut process =
+            |path: PathBuf| self.0.extend(Self::get_ssa_fonts(&path));
 
-        for entry in entries {
-            let Ok(entry) = entry else {
-                eprintln!("Error reading directory \"{}\"", path.display());
-                continue;
-            };
-
-            let entry_path = entry.path();
-
-            if Self::is_ssa(&entry_path) {
-                self.0.extend(Self::get_ssa_fonts(&entry_path));
-            } else if is_recursive && entry_path.is_dir() {
-                self.index(&entry_path, true);
-            }
-        }
+        walk_dir(path, is_recursive, &is_ssa, &mut process)
     }
 
     pub fn sorted(&self) -> Vec<String> {
         let mut vec: Vec<_> = self.0.iter().cloned().collect();
         vec.sort_unstable();
         vec
-    }
-
-    fn is_ssa(path: &Path) -> bool {
-        if !path.is_file() {
-            return false;
-        }
-
-        let Some(ext) = path.extension() else {
-            return false;
-        };
-
-        let ext = ext.to_ascii_lowercase();
-
-        ext == "ssa" || ext == "ass"
     }
 
     fn get_ssa_fonts(path: &Path) -> HashSet<String> {

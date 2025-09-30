@@ -7,7 +7,8 @@ use std::path::PathBuf;
 
 use self::cli::*;
 use self::functions::*;
-use crate::font::get_cache_path;
+
+use crate::utils::get_cache_path;
 
 pub fn app() -> Result<()> {
     let cli = Cli::parse();

@@ -2,6 +2,7 @@ mod app;
 mod font;
 mod ssa;
 mod system;
+mod utils;
 
 use crate::app::*;
 

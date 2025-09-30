@@ -4,12 +4,13 @@ use bincode::{
     encode_into_std_write,
 };
 use memmap2::Mmap;
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::fs::{File, create_dir_all, read_dir};
+use std::fs::{File, create_dir_all};
 use std::path::{Path, PathBuf, absolute};
 use std::sync::LazyLock;
 use ttf_parser::{Face, fonts_in_collection, name_id::FULL_NAME};
+
+use crate::utils::{is_font, walk_dir};
 
 #[derive(Encode, Decode)]
 struct FontFile {
@@ -65,45 +66,28 @@ impl FontProviders {
         Ok(())
     }
 
-    pub fn index(
-        &mut self,
-        path: &Path,
-        is_recursive: bool,
-        is_absolute: bool,
-    ) {
-        let path = if is_absolute {
-            Cow::from(absolute(path).unwrap())
-        } else {
-            Cow::from(path)
+    pub fn index(&mut self, path: &Path, is_recursive: bool) {
+        let mut process = |path: PathBuf| {
+            let (names, is_variable) = Self::get_font_names(&path);
+            let idx = self.files.len();
+            self.map
+                .extend(names.iter().cloned().map(|name| (name, idx)));
+            self.files.push(FontFile {
+                path,
+                names,
+                is_variable,
+            });
         };
 
-        let Ok(entries) = read_dir(&path) else {
-            eprintln!("Error reading directory \"{}\"", path.display());
-            return;
-        };
+        walk_dir(path, is_recursive, &is_font, &mut process);
+    }
 
-        for entry in entries {
-            let Ok(entry) = entry else {
-                eprintln!("Error reading directory \"{}\"", path.display());
-                continue;
-            };
-
-            let path = entry.path();
-
-            if is_font(&path) {
-                let (names, is_variable) = Self::get_font_names(&path);
-                let idx = self.files.len();
-                self.map
-                    .extend(names.iter().cloned().map(|name| (name, idx)));
-                self.files.push(FontFile {
-                    path,
-                    names,
-                    is_variable,
-                });
-            } else if is_recursive && path.is_dir() {
-                self.index(&path, is_recursive, is_absolute);
-            }
+    pub fn make_absolute(&mut self) -> Result<()> {
+        for file in &mut self.files {
+            file.path = absolute(&file.path)?;
         }
+
+        Ok(())
     }
 
     pub fn file_by_font_name(&self, name: &str) -> Option<&PathBuf> {
@@ -159,41 +143,6 @@ impl FontProviders {
 
         (names, is_variable)
     }
-}
-
-pub fn get_cache_path(path: Option<&Path>) -> PathBuf {
-    const CACHE_DIR_NAME: &str = "fntldr";
-    const CACHE_FILENAME: &str = "fntldr_cache.bin";
-
-    let Some(path) = path else {
-        // not specified, use default cache directory
-        return dirs::cache_dir()
-            .expect("Cache directory does not exist")
-            .join(CACHE_DIR_NAME)
-            .join(CACHE_FILENAME);
-    };
-
-    if path.is_file() {
-        // input already points to a file
-        path.to_path_buf()
-    } else {
-        // assume input points to a directory
-        path.join(CACHE_FILENAME)
-    }
-}
-
-pub fn is_font(path: &Path) -> bool {
-    if !path.is_file() {
-        return false;
-    }
-
-    let Some(ext) = path.extension() else {
-        return false;
-    };
-
-    let ext = ext.to_ascii_lowercase();
-
-    ext == "ttf" || ext == "otf" || ext == "ttc"
 }
 
 // not parsing other styles because I'm lazy

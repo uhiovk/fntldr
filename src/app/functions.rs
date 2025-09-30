@@ -1,11 +1,15 @@
 use anyhow::Result;
 use std::collections::HashSet;
-use std::fs::{copy, read_dir};
+use std::fs::copy;
 use std::path::PathBuf;
 
-use crate::font::{FontProviders, get_cache_path, is_font};
+use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
 use crate::system::*;
+use crate::utils::{
+    get_cache_path, get_cache_path_fallback, get_font_list_path, is_font,
+    walk_dir,
+};
 
 pub fn load(
     direct_dirs: Vec<PathBuf>,
@@ -15,11 +19,11 @@ pub fn load(
     let mut all_files = Vec::new();
 
     for dir in direct_dirs {
-        index_font_files(&mut all_files, dir, false);
+        walk_dir(&dir, false, &is_font, &mut |path| all_files.push(path));
     }
 
     for dir in recursive_dirs {
-        index_font_files(&mut all_files, dir, false);
+        walk_dir(&dir, true, &is_font, &mut |path| all_files.push(path));
     }
 
     all_files.extend(files.into_iter().filter(|file| is_font(file)));
@@ -45,20 +49,8 @@ pub fn load_by(
     cache_path: Option<PathBuf>,
     load_font_list: bool,
 ) -> Result<()> {
-    let cache = match cache_path {
-        Some(path) => {
-            let path = get_cache_path(Some(&path));
-            FontProviders::load(&path)?
-        }
-        None => {
-            let path = get_cache_path(Some(&PathBuf::from(".")));
-            if path.is_file() {
-                FontProviders::load(&PathBuf::from("."))?
-            } else {
-                FontProviders::load(&get_cache_path(None))?
-            }
-        }
-    };
+    let cache =
+        FontProviders::load(&get_cache_path_fallback(cache_path.as_deref()))?;
 
     let mut ssa_fonts = if load_font_list {
         SsaFonts::load().unwrap_or_else(|_| {
@@ -130,11 +122,15 @@ pub fn index(
     };
 
     for dir in direct_dirs {
-        cache.index(&dir, false, is_absolute);
+        cache.index(&dir, false);
     }
 
     for dir in recursive_dirs {
-        cache.index(&dir, true, is_absolute);
+        cache.index(&dir, true);
+    }
+
+    if is_absolute {
+        cache.make_absolute()?;
     }
 
     cache.save(&cache_path)?;
@@ -226,32 +222,6 @@ pub fn list(
     }
 
     Ok(())
-}
-
-pub fn index_font_files(
-    list: &mut Vec<PathBuf>,
-    path: PathBuf,
-    is_recursive: bool,
-) {
-    let Ok(entries) = read_dir(&path) else {
-        eprintln!("Error reading directory \"{}\"", path.display());
-        return;
-    };
-
-    for entry in entries {
-        let Ok(entry) = entry else {
-            eprintln!("Error reading directory \"{}\"", path.display());
-            continue;
-        };
-
-        let path = entry.path();
-
-        if is_font(&path) {
-            list.push(path);
-        } else if is_recursive && path.is_dir() {
-            index_font_files(list, path, is_recursive);
-        }
-    }
 }
 
 fn get_installed_file(name: &str, finder: &impl FindFont) -> Option<PathBuf> {
