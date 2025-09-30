@@ -53,7 +53,7 @@ pub fn load_by(
         FontProviders::load(&get_cache_path_fallback(cache_path.as_deref()))?;
 
     let mut ssa_fonts = if load_font_list {
-        SsaFonts::load().unwrap_or_else(|_| {
+        SsaFonts::load(&get_font_list_path(None)).unwrap_or_else(|_| {
             eprintln!("Cannot load \"fonts.txt\", ignoring");
             SsaFonts::new()
         })
@@ -217,7 +217,7 @@ pub fn list(
     }
 
     if export_font_list {
-        ssa_fonts.save()?;
+        ssa_fonts.save(&get_font_list_path(None))?;
         println!("Exported font list to \"./fonts.txt\"");
     }
 

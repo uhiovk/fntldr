@@ -25,25 +25,22 @@ impl SsaFonts {
         &self.0
     }
 
-    pub fn load() -> Result<Self> {
-        let path = PathBuf::from("./fonts.txt");
-        let content = read_to_string(&path).with_context(|| {
+    pub fn load(path: &Path) -> Result<Self> {
+        let content = read_to_string(path).with_context(|| {
             format!("Error reading file \"{}\"", path.display())
         })?;
 
         Ok(content.parse().unwrap())
     }
 
-    pub fn save(&self) -> Result<()> {
-        let path = PathBuf::from("./fonts.txt");
-
+    pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
             create_dir_all(dir).with_context(|| {
                 format!("Error creating directory \"{}\"", path.display())
             })?;
         }
 
-        write(&path, self.to_string()).with_context(|| {
+        write(path, self.to_string()).with_context(|| {
             format!("Error writing file \"{}\"", path.display())
         })?;
 
