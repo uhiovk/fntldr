@@ -13,7 +13,7 @@ fn tldr() -> ! {
 
 fn main() {
     let program_name = std::env::current_exe()
-        .unwrap()
+        .expect("Cannot get current executable")
         .file_name()
         .unwrap()
         .to_ascii_lowercase()
@@ -33,7 +33,7 @@ fn main() {
     if let Err(error) = result {
         eprintln!("{}\n", error);
         eprint!("Press enter to exit...");
-        std::io::stdin().read_line(&mut String::new()).unwrap();
+        let _ = std::io::stdin().read_line(&mut String::new());
         std::process::exit(1);
     }
 }

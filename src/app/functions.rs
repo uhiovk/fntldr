@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
-use crate::system::*;
+use crate::system::{FindFont, LoadFontFiles, get_finder, get_loader};
 use crate::utils::{
     get_cache_path, get_cache_path_fallback, get_font_list_path, is_font,
     walk_dir,
@@ -144,7 +144,7 @@ pub fn list(
     recursive_dirs: Vec<PathBuf>,
     cache_path: Option<Option<PathBuf>>,
     export_font_list: bool,
-    export_fonts: Option<PathBuf>,
+    export_fonts_path: Option<PathBuf>,
 ) -> Result<()> {
     const INSTALLED_INDICATOR: &str = "*";
     const IN_INDEX_INDICATOR: &str = "-";
@@ -168,16 +168,16 @@ pub fn list(
         None => FontProviders::new(),
     };
 
-    let (do_export_fonts, export_fonts_path) = match export_fonts {
+    let export_fonts_path = match export_fonts_path {
         Some(path) => {
             if path.is_dir() {
-                (true, path)
+                Some(path)
             } else {
                 eprintln!("Path is not a directory: \"{}\"", path.display());
-                (false, PathBuf::new())
+                None
             }
         }
-        None => (false, PathBuf::new()),
+        None => None,
     };
 
     if cache_path.is_some() {
@@ -188,29 +188,26 @@ pub fn list(
     }
 
     for name in ssa_fonts.sorted() {
-        let installed_file = get_installed_file(&name, &finder);
-        let cached_file = cache.file_by_font_name(&name).map(|p| p.to_owned());
-
-        let file;
-
-        if let Some(path) = installed_file {
+        let file = if let Some(path) = get_installed_file(&name, &finder) {
             println!("[{}] {}", INSTALLED_INDICATOR, name);
-            file = Some(path);
-        } else if let Some(path) = cached_file {
+            Some(path)
+        } else if let Some(path) = cache.file_by_font_name(&name) {
             println!("[{}] {}", IN_INDEX_INDICATOR, name);
-            file = Some(path);
+            Some(path.to_owned())
         } else {
             println!("[{}] {}", NOT_INSTALLED_INDICATOR, name);
-            file = None;
-        }
+            None
+        };
 
-        if do_export_fonts && let Some(file) = file {
+        if let Some(ref export_path) = export_fonts_path
+            && let Some(file) = file
+        {
             let filename = file.file_name().unwrap();
-            if copy(&file, export_fonts_path.join(filename)).is_err() {
+            if copy(&file, export_path.join(filename)).is_err() {
                 eprintln!(
                     "Error copying from \"{}\" to \"{}\"",
                     file.display(),
-                    export_fonts_path.display()
+                    export_path.display()
                 )
             }
         }

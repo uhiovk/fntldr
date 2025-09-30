@@ -39,13 +39,13 @@ pub fn app() -> Result<()> {
             recursive_dirs,
             cache,
             export_font_list,
-            export_fonts,
+            export_fonts_path,
         } => list(
             direct_dirs,
             recursive_dirs,
             cache,
             export_font_list,
-            export_fonts,
+            export_fonts_path,
         ),
     }
 }

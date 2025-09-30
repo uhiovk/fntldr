@@ -87,7 +87,7 @@ pub enum Commands {
 
         /// Export installed fonts to directory
         #[arg(short = 'x', long = "export", value_name = "DIRECTORY")]
-        export_fonts: Option<PathBuf>,
+        export_fonts_path: Option<PathBuf>,
     },
 }
 

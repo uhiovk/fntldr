@@ -95,6 +95,7 @@ impl FontProviders {
             return Some(&self.files[*file_idx].path);
         }
 
+        // fallback:
         // match variable fonts, only by family name
         // assuming variable fonts provide any weight
         let (family, _) = parse_weight(name);
