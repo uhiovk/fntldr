@@ -12,6 +12,7 @@ fn tldr() -> ! {
 }
 
 fn main() {
+    // `current_exe` follows symlink on linux
     let program_name = std::env::current_exe()
         .expect("Cannot get current executable")
         .file_name()

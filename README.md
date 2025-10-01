@@ -40,7 +40,7 @@ fntldr list [--dir DIRECTORY]... [--recurse DIRECTORY]... [--cache [CACHE]] [--f
 
 ## Drag-and-drop Compatibility
 
-Rename or link the executable to `fontloader` / `fontloadersub` / `listassfonts` (case insensitive) to use DnD compatibility modes.
+Rename the executable to `fontloader` / `fontloadersub` / `listassfonts` (case insensitive) to use DnD compatibility modes.
 
 ### FontLoader mode
 
