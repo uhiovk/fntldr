@@ -15,7 +15,7 @@ use std::{collections::HashSet, fs::remove_dir_all};
 use tempfile::{TempDir, tempdir};
 
 use super::{FindFont, LoadFontFiles};
-use crate::font::parse_weight;
+use crate::utils::parse_weight;
 
 pub struct FontconfigFinder;
 

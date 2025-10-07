@@ -1,5 +1,7 @@
+use std::collections::HashSet;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 pub fn walk_dir(
     path: &Path,
@@ -74,17 +76,51 @@ pub fn get_font_list_path(path: Option<&Path>) -> PathBuf {
     PathBuf::from(DEFAULT_LOCATION)
 }
 
+// not parsing other styles because I'm lazy
+pub fn parse_weight(name: &str) -> (&str, &str) {
+    static FONT_WEIGHTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
+        // only consider some common weight names
+        [
+            "extralight",
+            "ultralight",
+            "extrathin",
+            "light",
+            "thin",
+            "demilight",
+            "semilight",
+            "book",
+            "regular",
+            "normal",
+            "medium",
+            "demibold",
+            "semibold",
+            "bold",
+            "heavy",
+            "black",
+            "extrabold",
+            "ultrabold",
+        ]
+        .into()
+    });
+
+    if let Some((family, weight)) = name.rsplit_once(" ")
+        && FONT_WEIGHTS.contains(weight.to_ascii_lowercase().as_str())
+    {
+        (family, weight)
+    } else {
+        (name, "Regular")
+    }
+}
+
 pub fn is_font(path: &Path) -> bool {
-    const FONT_FILE_EXTS: [&str; 3] = ["ttf", "otf", "ttc"];
-    ext_endswith(path, FONT_FILE_EXTS)
+    ext_endswith(path, &["ttf", "otf", "ttc"])
 }
 
 pub fn is_ssa(path: &Path) -> bool {
-    const SSA_FILE_EXTS: [&str; 2] = ["ssa", "ass"];
-    ext_endswith(path, SSA_FILE_EXTS)
+    ext_endswith(path, &["ssa", "ass"])
 }
 
-fn ext_endswith<const N: usize>(path: &Path, extensions: [&str; N]) -> bool {
+fn ext_endswith(path: &Path, extensions: &[impl AsRef<str>]) -> bool {
     if !path.is_file() {
         return false;
     }
@@ -95,5 +131,5 @@ fn ext_endswith<const N: usize>(path: &Path, extensions: [&str; N]) -> bool {
 
     let ext = ext.to_ascii_lowercase();
 
-    extensions.into_iter().any(|tgt| ext == tgt)
+    extensions.iter().any(|tgt| ext == tgt.as_ref())
 }

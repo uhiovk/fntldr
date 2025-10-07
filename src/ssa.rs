@@ -61,6 +61,14 @@ impl SsaFonts {
     }
 
     fn get_ssa_fonts(path: &Path) -> HashSet<String> {
+        // in SSA, "{\fnFont Name}" specifies a font override for following text
+        // multiple style overrides may be specified in a single pair of "{}"
+        // we only match the last specified font name in each "{}" as it would override previous ones
+        // test it out with "Hello, {\fnFoo Font\fs42\fnBar Font}Rust {\fnrustc\fs10\fncargo\b1}World!"
+        // it will capture "Bar Font" and "cargo"
+        static FONT_OVRD_REGEX: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^}\\]+).*?}").unwrap());
+
         fn strip_prefix(s: &str) -> String {
             s.strip_prefix('@').unwrap_or(s).to_string()
         }
@@ -139,11 +147,3 @@ impl FromStr for SsaFonts {
         Ok(Self(s.lines().map(String::from).collect()))
     }
 }
-
-// in SSA, "{\fnFont Name}" specifies a font override for following text
-// multiple style overrides may be specified in a single pair of "{}"
-// we only match the last specified font name in each "{}" as it would override previous ones
-// test it out with "Hello, {\fnFoo Font\fs42\fnBar Font}Rust {\fnrustc\fs10\fncargo\b1}World!"
-// it will capture "Bar Font" and "cargo"
-static FONT_OVRD_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^}\\]+).*?}").unwrap());

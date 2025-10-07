@@ -4,13 +4,12 @@ use bincode::{
     encode_into_std_write,
 };
 use memmap2::Mmap;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 use std::path::{Path, PathBuf, absolute};
-use std::sync::LazyLock;
 use ttf_parser::{Face, fonts_in_collection, name_id::FULL_NAME};
 
-use crate::utils::{is_font, walk_dir};
+use crate::utils::{is_font, parse_weight, walk_dir};
 
 #[derive(Encode, Decode)]
 struct FontFile {
@@ -145,40 +144,3 @@ impl FontProviders {
         (names, is_variable)
     }
 }
-
-// not parsing other styles because I'm lazy
-pub fn parse_weight(name: &str) -> (&str, &str) {
-    if let Some((family, weight)) = name.rsplit_once(" ")
-        && FONT_WEIGHTS.contains(weight.to_ascii_lowercase().as_str())
-    {
-        (family, weight)
-    } else {
-        (name, "Regular")
-    }
-}
-
-// only consider some common weight names
-static FONT_WEIGHTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
-    let mut set = HashSet::with_capacity(18);
-
-    set.insert("extralight");
-    set.insert("ultralight");
-    set.insert("extrathin");
-    set.insert("light");
-    set.insert("thin");
-    set.insert("demilight");
-    set.insert("semilight");
-    set.insert("book");
-    set.insert("regular");
-    set.insert("normal");
-    set.insert("medium");
-    set.insert("demibold");
-    set.insert("semibold");
-    set.insert("bold");
-    set.insert("heavy");
-    set.insert("black");
-    set.insert("extrabold");
-    set.insert("ultrabold");
-
-    set
-});

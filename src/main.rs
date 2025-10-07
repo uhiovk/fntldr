@@ -17,9 +17,8 @@ fn main() {
         .expect("Cannot get current executable")
         .file_name()
         .unwrap()
-        .to_ascii_lowercase()
         .to_string_lossy()
-        .into_owned();
+        .to_ascii_lowercase();
     let program_name =
         program_name.strip_suffix(".exe").unwrap_or(&program_name);
 
