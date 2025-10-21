@@ -6,12 +6,11 @@ use fontconfig_sys::{
     constants::{FC_FAMILY, FC_FILE, FC_STYLE},
 };
 use std::ffi::{CStr, CString, OsStr};
-use std::fs::remove_file;
+use std::fs::{remove_dir_all, remove_file};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::ptr;
-use std::{collections::HashSet, fs::remove_dir_all};
 use tempfile::{TempDir, tempdir};
 
 use super::{FindFont, LoadFontFiles};
@@ -34,63 +33,58 @@ impl FindFont for FontconfigFinder {
 
         unsafe {
             // create the pattern
-            let pattern = FcPatternCreate();
+            let pattern = FcPatternPtr(FcPatternCreate());
 
             ensure!(
-                !pattern.is_null(),
+                !pattern.0.is_null(),
                 "FcPatternCreate returned null pointer"
             );
 
             // add family name and style to the pattern
             if FcPatternAddString(
-                pattern,
+                pattern.0,
                 FC_FAMILY.as_ptr(),
                 CString::new(family)?.as_ptr() as *const u8,
             ) == 0
             {
-                FcPatternDestroy(pattern);
                 bail!("FcPatternAddString failed");
             }
 
             if FcPatternAddString(
-                pattern,
+                pattern.0,
                 FC_STYLE.as_ptr(),
                 CString::new(style)?.as_ptr() as *const u8,
             ) == 0
             {
-                FcPatternDestroy(pattern);
                 bail!("FcPatternAddString failed");
             }
 
             // perform substitutions
-            if FcConfigSubstitute(ptr::null_mut(), pattern, FcMatchPattern) == 0
+            if FcConfigSubstitute(ptr::null_mut(), pattern.0, FcMatchPattern)
+                == 0
             {
-                FcPatternDestroy(pattern);
                 bail!("FcConfigSubstitute failed");
             };
-            FcDefaultSubstitute(pattern);
+            FcDefaultSubstitute(pattern.0);
 
             // match the pattern, basically equivalent to `fc-match`
-            let font_match = FcFontMatch(ptr::null_mut(), pattern, &mut 0);
+            let font_match =
+                FcPatternPtr(FcFontMatch(ptr::null_mut(), pattern.0, &mut 0));
 
-            // destroy the created pattern
-            FcPatternDestroy(pattern);
-
-            ensure!(!font_match.is_null(), "FcFontMatch returned null pointer");
+            ensure!(
+                !font_match.0.is_null(),
+                "FcFontMatch returned null pointer"
+            );
 
             // check all family names of the returned best match
-            let is_exact = families_in_pattern(font_match)
+            let is_exact = families_in_pattern(&font_match)
                 .contains(&family.to_ascii_lowercase());
 
             if !is_exact {
-                FcPatternDestroy(font_match);
                 return Ok(None);
             }
 
-            let path = file_in_pattern(font_match)?;
-
-            // destroy the returned pattern
-            FcPatternDestroy(font_match);
+            let path = file_in_pattern(&font_match)?;
 
             Ok(Some(path))
         }
@@ -166,7 +160,7 @@ impl LoadFontFiles for FontconfigLoader {
 impl Drop for FontconfigLoader {
     fn drop(&mut self) {
         if remove_dir_all(&self.link).is_err() {
-            println!("Error removing symlink \"{}\"", self.link.display());
+            eprintln!("Error removing symlink \"{}\"", self.link.display());
         }
 
         let result = unsafe { FcConfigBuildFonts(ptr::null_mut()) };
@@ -178,11 +172,21 @@ impl Drop for FontconfigLoader {
     }
 }
 
-unsafe fn file_in_pattern(pattern: *mut FcPattern) -> Result<PathBuf> {
+struct FcPatternPtr(*mut FcPattern);
+
+impl Drop for FcPatternPtr {
+    fn drop(&mut self) {
+        unsafe {
+            FcPatternDestroy(self.0);
+        }
+    }
+}
+
+unsafe fn file_in_pattern(pattern: &FcPatternPtr) -> Result<PathBuf> {
     let mut match_res_ptr = ptr::null_mut();
 
     let result = unsafe {
-        FcPatternGetString(pattern, FC_FILE.as_ptr(), 0, &mut match_res_ptr)
+        FcPatternGetString(pattern.0, FC_FILE.as_ptr(), 0, &mut match_res_ptr)
     };
 
     ensure!(
@@ -203,14 +207,14 @@ unsafe fn file_in_pattern(pattern: *mut FcPattern) -> Result<PathBuf> {
     Ok(path)
 }
 
-unsafe fn families_in_pattern(pattern: *mut FcPattern) -> HashSet<String> {
+unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
     (0..)
         .map_while(|i| {
             let mut match_res_ptr = ptr::null_mut();
 
             if unsafe {
                 FcPatternGetString(
-                    pattern,
+                    pattern.0,
                     FC_FAMILY.as_ptr(),
                     i,
                     &mut match_res_ptr,
