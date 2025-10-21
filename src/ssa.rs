@@ -26,30 +26,26 @@ impl SsaFonts {
     }
 
     pub fn load(path: &Path) -> Result<Self> {
-        let content = read_to_string(path).with_context(|| {
-            format!("Error reading file \"{}\"", path.display())
-        })?;
+        let content = read_to_string(path)
+            .with_context(|| format!("Error reading file \"{}\"", path.display()))?;
 
         Ok(content.parse().unwrap())
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
-            create_dir_all(dir).with_context(|| {
-                format!("Error creating directory \"{}\"", path.display())
-            })?;
+            create_dir_all(dir)
+                .with_context(|| format!("Error creating directory \"{}\"", path.display()))?;
         }
 
-        write(path, self.to_string()).with_context(|| {
-            format!("Error writing file \"{}\"", path.display())
-        })?;
+        write(path, self.to_string())
+            .with_context(|| format!("Error writing file \"{}\"", path.display()))?;
 
         Ok(())
     }
 
     pub fn index(&mut self, path: &Path, is_recursive: bool) {
-        let mut process =
-            |path: PathBuf| self.0.extend(Self::get_ssa_fonts(&path));
+        let mut process = |path: PathBuf| self.0.extend(Self::get_ssa_fonts(&path));
 
         walk_dir(path, is_recursive, &is_ssa, &mut process)
     }
@@ -83,9 +79,7 @@ impl SsaFonts {
             return HashSet::new();
         };
 
-        let Some(Section::Styles(styles)) =
-            sub.find_section(SectionType::Styles)
-        else {
+        let Some(Section::Styles(styles)) = sub.find_section(SectionType::Styles) else {
             eprintln!(
                 "The script does not contain styles section: \"{}\"",
                 path.display()
@@ -93,9 +87,7 @@ impl SsaFonts {
             return HashSet::new();
         };
 
-        let Some(Section::Events(events)) =
-            sub.find_section(SectionType::Events)
-        else {
+        let Some(Section::Events(events)) = sub.find_section(SectionType::Events) else {
             eprintln!(
                 "The script does not contain events section: \"{}\"",
                 path.display()
@@ -111,9 +103,9 @@ impl SsaFonts {
 
             // add all inline font overrides in the dialogue
             fonts.extend(
-                FONT_OVRD_REGEX.captures_iter(dialogue.text).filter_map(
-                    |cap| cap.get(1).map(|m| strip_prefix(m.as_str())),
-                ),
+                FONT_OVRD_REGEX
+                    .captures_iter(dialogue.text)
+                    .filter_map(|cap| cap.get(1).map(|m| strip_prefix(m.as_str()))),
             );
         }
 

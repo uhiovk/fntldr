@@ -1,8 +1,5 @@
 use anyhow::{Context, Result};
-use bincode::{
-    Decode, Encode, config::standard, decode_from_std_read,
-    encode_into_std_write,
-};
+use bincode::{Decode, Encode, config::standard, decode_from_std_read, encode_into_std_write};
 use memmap2::Mmap;
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
@@ -33,20 +30,17 @@ impl FontProviders {
     }
 
     pub fn load(path: &Path) -> Result<Self> {
-        let mut file = File::open(path).with_context(|| {
-            format!("Error opening file \"{}\"", path.display())
-        })?;
+        let mut file = File::open(path)
+            .with_context(|| format!("Error opening file \"{}\"", path.display()))?;
 
-        decode_from_std_read(&mut file, standard()).with_context(|| {
-            format!("Error reading file \"{}\"", path.display())
-        })
+        decode_from_std_read(&mut file, standard())
+            .with_context(|| format!("Error reading file \"{}\"", path.display()))
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
-            create_dir_all(dir).with_context(|| {
-                format!("Error creating directory \"{}\"", path.display())
-            })?;
+            create_dir_all(dir)
+                .with_context(|| format!("Error creating directory \"{}\"", path.display()))?;
         }
 
         let mut file = File::options()
@@ -54,13 +48,10 @@ impl FontProviders {
             .create(true)
             .truncate(true)
             .open(path)
-            .with_context(|| {
-                format!("Error opening file \"{}\"", path.display())
-            })?;
+            .with_context(|| format!("Error opening file \"{}\"", path.display()))?;
 
-        encode_into_std_write(self, &mut file, standard()).with_context(
-            || format!("Error writing file \"{}\"", path.display()),
-        )?;
+        encode_into_std_write(self, &mut file, standard())
+            .with_context(|| format!("Error writing file \"{}\"", path.display()))?;
 
         Ok(())
     }

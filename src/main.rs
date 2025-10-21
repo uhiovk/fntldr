@@ -19,8 +19,7 @@ fn main() {
         .unwrap()
         .to_string_lossy()
         .to_ascii_lowercase();
-    let program_name =
-        program_name.strip_suffix(".exe").unwrap_or(&program_name);
+    let program_name = program_name.strip_suffix(".exe").unwrap_or(&program_name);
 
     let result = match program_name {
         "friedegg" => tldr(),

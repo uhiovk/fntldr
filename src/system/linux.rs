@@ -1,8 +1,8 @@
 use anyhow::{Context, Result, bail, ensure};
 use fontconfig_sys::{
-    FcConfigBuildFonts, FcConfigSubstitute, FcDefaultSubstitute,
-    FcDirCacheRead, FcFontMatch, FcMatchPattern, FcPattern, FcPatternAddString,
-    FcPatternCreate, FcPatternDestroy, FcPatternGetString, FcResultMatch,
+    FcConfigBuildFonts, FcConfigSubstitute, FcDefaultSubstitute, FcDirCacheRead, FcFontMatch,
+    FcMatchPattern, FcPattern, FcPatternAddString, FcPatternCreate, FcPatternDestroy,
+    FcPatternGetString, FcResultMatch,
     constants::{FC_FAMILY, FC_FILE, FC_STYLE},
 };
 use std::ffi::{CStr, CString, OsStr};
@@ -60,25 +60,18 @@ impl FindFont for FontconfigFinder {
             }
 
             // perform substitutions
-            if FcConfigSubstitute(ptr::null_mut(), pattern.0, FcMatchPattern)
-                == 0
-            {
+            if FcConfigSubstitute(ptr::null_mut(), pattern.0, FcMatchPattern) == 0 {
                 bail!("FcConfigSubstitute failed");
             };
             FcDefaultSubstitute(pattern.0);
 
             // match the pattern, basically equivalent to `fc-match`
-            let font_match =
-                FcPatternPtr(FcFontMatch(ptr::null_mut(), pattern.0, &mut 0));
+            let font_match = FcPatternPtr(FcFontMatch(ptr::null_mut(), pattern.0, &mut 0));
 
-            ensure!(
-                !font_match.0.is_null(),
-                "FcFontMatch returned null pointer"
-            );
+            ensure!(!font_match.0.is_null(), "FcFontMatch returned null pointer");
 
             // check all family names of the returned best match
-            let is_exact = families_in_pattern(&font_match)
-                .contains(&family.to_ascii_lowercase());
+            let is_exact = families_in_pattern(&font_match).contains(&family.to_ascii_lowercase());
 
             if !is_exact {
                 return Ok(None);
@@ -110,10 +103,7 @@ impl FontconfigLoader {
             } else {
                 // link is broken
                 remove_file(&link).with_context(|| {
-                    format!(
-                        "Error removing broken symlink \"{}\"",
-                        link.display()
-                    )
+                    format!("Error removing broken symlink \"{}\"", link.display())
                 })?;
             }
         }
@@ -131,10 +121,7 @@ impl FontconfigLoader {
 }
 
 impl LoadFontFiles for FontconfigLoader {
-    fn load(
-        &mut self,
-        files: impl IntoIterator<Item = impl AsRef<Path>>,
-    ) -> Result<()> {
+    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let file = file.as_ref();
             let target = self.link.join(file.file_name().unwrap());
@@ -185,9 +172,7 @@ impl Drop for FcPatternPtr {
 unsafe fn file_in_pattern(pattern: &FcPatternPtr) -> Result<PathBuf> {
     let mut match_res_ptr = ptr::null_mut();
 
-    let result = unsafe {
-        FcPatternGetString(pattern.0, FC_FILE.as_ptr(), 0, &mut match_res_ptr)
-    };
+    let result = unsafe { FcPatternGetString(pattern.0, FC_FILE.as_ptr(), 0, &mut match_res_ptr) };
 
     ensure!(
         result == FcResultMatch,
@@ -212,14 +197,8 @@ unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
         .map_while(|i| {
             let mut match_res_ptr = ptr::null_mut();
 
-            if unsafe {
-                FcPatternGetString(
-                    pattern.0,
-                    FC_FAMILY.as_ptr(),
-                    i,
-                    &mut match_res_ptr,
-                )
-            } != FcResultMatch
+            if unsafe { FcPatternGetString(pattern.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) }
+                != FcResultMatch
             {
                 None
             } else {
@@ -230,10 +209,9 @@ unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
             if match_res_ptr.is_null() {
                 None
             } else {
-                let family =
-                    unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
-                        .to_string_lossy()
-                        .to_ascii_lowercase();
+                let family = unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
+                    .to_string_lossy()
+                    .to_ascii_lowercase();
 
                 Some(family)
             }

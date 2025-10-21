@@ -7,8 +7,7 @@ use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
 use crate::system::{FindFont, LoadFontFiles, get_finder, get_loader};
 use crate::utils::{
-    get_cache_path, get_cache_path_fallback, get_font_list_path, is_font,
-    walk_dir,
+    get_cache_path, get_cache_path_fallback, get_font_list_path, is_font, walk_dir,
 };
 
 pub fn load(
@@ -49,8 +48,7 @@ pub fn load_by(
     cache_path: Option<PathBuf>,
     load_font_list: bool,
 ) -> Result<()> {
-    let cache =
-        FontProviders::load(&get_cache_path_fallback(cache_path.as_deref()))?;
+    let cache = FontProviders::load(&get_cache_path_fallback(cache_path.as_deref()))?;
 
     let mut ssa_fonts = if load_font_list {
         SsaFonts::load(&get_font_list_path(None)).unwrap_or_else(|_| {
@@ -162,9 +160,7 @@ pub fn list(
 
     let finder = get_finder()?;
     let cache = match &cache_path {
-        Some(path_opt) => {
-            FontProviders::load(&get_cache_path(path_opt.as_deref()))?
-        }
+        Some(path_opt) => FontProviders::load(&get_cache_path(path_opt.as_deref()))?,
         None => FontProviders::new(),
     };
 

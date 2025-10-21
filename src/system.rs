@@ -10,10 +10,7 @@ pub trait FindFont {
 
 // should implement `Drop` to unload fonts on drop
 pub trait LoadFontFiles {
-    fn load(
-        &mut self,
-        files: impl IntoIterator<Item = impl AsRef<Path>>,
-    ) -> Result<()>;
+    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()>;
 }
 
 pub fn get_finder() -> Result<impl FindFont> {
