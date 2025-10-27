@@ -45,7 +45,7 @@ pub fn get_cache_path(path: Option<&Path>) -> PathBuf {
 
     if path.is_file() {
         // input already points to a file
-        path.to_path_buf()
+        path.to_owned()
     } else {
         // assume input points to a directory
         path.join(CACHE_FILENAME)

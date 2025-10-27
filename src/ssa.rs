@@ -66,7 +66,7 @@ impl SsaFonts {
             LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^}\\]+).*?}").unwrap());
 
         fn strip_prefix(s: &str) -> String {
-            s.strip_prefix('@').unwrap_or(s).to_string()
+            s.strip_prefix('@').unwrap_or(s).to_owned()
         }
 
         let Ok(content) = read_to_string(path) else {
@@ -99,7 +99,7 @@ impl SsaFonts {
         let mut used_styles = HashSet::new();
 
         for dialogue in events.iter().filter(|event| event.is_dialogue()) {
-            used_styles.insert(dialogue.style.to_string());
+            used_styles.insert(dialogue.style.to_owned());
 
             // add all inline font overrides in the dialogue
             fonts.extend(

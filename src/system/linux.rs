@@ -187,7 +187,7 @@ unsafe fn file_in_pattern(pattern: &FcPatternPtr) -> Result<PathBuf> {
 
     let path = unsafe { CStr::from_ptr(match_res_ptr as *const i8) };
     let path = OsStr::from_bytes(path.to_bytes());
-    let path = Path::new(path).to_path_buf();
+    let path = Path::new(path).to_owned();
 
     Ok(path)
 }
@@ -197,24 +197,16 @@ unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
         .map_while(|i| {
             let mut match_res_ptr = ptr::null_mut();
 
-            if unsafe { FcPatternGetString(pattern.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) }
-                != FcResultMatch
-            {
-                None
-            } else {
-                Some(match_res_ptr)
-            }
+            (unsafe { FcPatternGetString(pattern.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) }
+                != FcResultMatch)
+                .then_some(match_res_ptr)
         })
+        .filter(|match_res_ptr| match_res_ptr.is_null())
         .filter_map(|match_res_ptr| {
-            if match_res_ptr.is_null() {
-                None
-            } else {
-                let family = unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
-                    .to_string_lossy()
-                    .to_ascii_lowercase();
-
-                Some(family)
-            }
+            unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
+                .to_str()
+                .map(|s| s.to_ascii_lowercase())
+                .ok()
         })
         .collect()
 }
