@@ -39,25 +39,19 @@ pub fn app() -> Result<()> {
 pub fn fontloader_app() -> Result<()> {
     let cli = FontLoaderCli::parse();
     let direct_dirs = if cli.files.is_empty() { vec![PathBuf::from(".")] } else { vec![] };
-
-    load(direct_dirs, vec![], cli.files)?;
-    Ok(())
+    load(direct_dirs, vec![], cli.files)
 }
 
 pub fn fontloadersub_app() -> Result<()> {
     let cli = FontLoaderSubCli::parse();
-
     if !get_cache_path(Some(&PathBuf::from("."))).is_file() {
         println!("Cache not found, building...");
         index(vec![], vec![PathBuf::from(".")], Some(PathBuf::from(".")), false)?;
     }
-
-    load_by(vec![], cli.dirs, Some(PathBuf::from(".")), false)?;
-    Ok(())
+    load_by(vec![], cli.dirs, Some(PathBuf::from(".")), false)
 }
 
 pub fn listassfonts_app() -> Result<()> {
     let cli = ListAssFontsCli::parse();
-    list(vec![], cli.dirs, None, false, None)?;
-    Ok(())
+    list(vec![], cli.dirs, None, false, None)
 }
