@@ -1,8 +1,9 @@
 #[cfg(target_os = "linux")]
 mod linux;
 
-use anyhow::Result;
 use std::path::{Path, PathBuf};
+
+use anyhow::Result;
 
 pub trait FindFont {
     fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>>;
@@ -20,5 +21,5 @@ pub fn get_finder() -> Result<impl FindFont> {
 
 pub fn get_loader() -> Result<impl LoadFontFiles> {
     #[cfg(target_os = "linux")]
-    linux::FontconfigLoader::new()
+    self::linux::FontconfigLoader::new()
 }

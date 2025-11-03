@@ -1,16 +1,17 @@
-use anyhow::{Context, Result, bail, ensure};
-use fontconfig_sys::{
-    FcConfigBuildFonts, FcConfigSubstitute, FcDefaultSubstitute, FcDirCacheRead, FcFontMatch,
-    FcMatchPattern, FcPattern, FcPatternAddString, FcPatternCreate, FcPatternDestroy,
-    FcPatternGetString, FcResultMatch,
-    constants::{FC_FAMILY, FC_FILE, FC_STYLE},
-};
 use std::ffi::{CStr, CString, OsStr};
 use std::fs::{remove_dir_all, remove_file};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::ptr;
+
+use anyhow::{Context, Result, bail, ensure};
+use fontconfig_sys::constants::{FC_FAMILY, FC_FILE, FC_STYLE};
+use fontconfig_sys::{
+    FcConfigBuildFonts, FcConfigSubstitute, FcDefaultSubstitute, FcDirCacheRead, FcFontMatch,
+    FcMatchPattern, FcPattern, FcPatternAddString, FcPatternCreate, FcPatternDestroy,
+    FcPatternGetString, FcResultMatch,
+};
 use tempfile::{TempDir, tempdir};
 
 use super::{FindFont, LoadFontFiles};
@@ -35,10 +36,7 @@ impl FindFont for FontconfigFinder {
             // create the pattern
             let pattern = FcPatternPtr(FcPatternCreate());
 
-            ensure!(
-                !pattern.0.is_null(),
-                "FcPatternCreate returned null pointer"
-            );
+            ensure!(!pattern.0.is_null(), "FcPatternCreate returned null pointer");
 
             // add family name and style to the pattern
             if FcPatternAddString(
@@ -92,9 +90,7 @@ pub struct FontconfigLoader {
 impl FontconfigLoader {
     pub fn new() -> Result<Self> {
         let _tmpdir = tempdir()?;
-        let link = dirs::font_dir()
-            .expect("Fonts directory does not exist")
-            .join(".fntldrtmp");
+        let link = dirs::font_dir().expect("Fonts directory does not exist").join(".fntldrtmp");
 
         if link.is_symlink() {
             if link.is_dir() {
@@ -109,11 +105,7 @@ impl FontconfigLoader {
         }
 
         symlink(_tmpdir.path(), &link).with_context(|| {
-            format!(
-                "Error linking from \"{}\" to \"{}\"",
-                _tmpdir.path().display(),
-                link.display()
-            )
+            format!("Error linking from \"{}\" to \"{}\"", _tmpdir.path().display(), link.display())
         })?;
 
         Ok(Self { _tmpdir, link })
@@ -126,11 +118,7 @@ impl LoadFontFiles for FontconfigLoader {
             let file = file.as_ref();
             let target = self.link.join(file.file_name().unwrap());
             symlink(file, &target).with_context(|| {
-                format!(
-                    "Error linking from \"{}\" to \"{}\"",
-                    file.display(),
-                    target.display()
-                )
+                format!("Error linking from \"{}\" to \"{}\"", file.display(), target.display())
             })?;
         }
 
@@ -176,14 +164,10 @@ unsafe fn file_in_pattern(pattern: &FcPatternPtr) -> Result<PathBuf> {
 
     ensure!(
         result == FcResultMatch,
-        "FcPatternGetString failed, \
-        no such field \"file\" in pattern"
+        "FcPatternGetString failed, no such field \"file\" in pattern"
     );
 
-    ensure!(
-        !match_res_ptr.is_null(),
-        "FcPatternGetString returned null pointer"
-    );
+    ensure!(!match_res_ptr.is_null(), "FcPatternGetString returned null pointer");
 
     let path = unsafe { CStr::from_ptr(match_res_ptr as *const i8) };
     let path = OsStr::from_bytes(path.to_bytes());
@@ -202,11 +186,10 @@ unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
                 .then_some(match_res_ptr)
         })
         .filter(|match_res_ptr| match_res_ptr.is_null())
-        .filter_map(|match_res_ptr| {
+        .map(|match_res_ptr| {
             unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
-                .to_str()
-                .map(|s| s.to_ascii_lowercase())
-                .ok()
+                .to_string_lossy()
+                .to_ascii_lowercase()
         })
         .collect()
 }

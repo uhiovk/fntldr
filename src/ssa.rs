@@ -1,5 +1,3 @@
-use anyhow::{Context, Result};
-use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::fs::{create_dir_all, read_to_string, write};
@@ -7,10 +5,12 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use anyhow::{Context, Result};
 // this crate is very probably using tons of LLM generated code
 // I definitely don't like that, but at least it has fairly nice API
 // and there is not a single crate else that follows basic SSA specs
 use ass_core::{Script, Section, parser::SectionType};
+use regex::Regex;
 
 use crate::utils::{is_ssa, walk_dir};
 
@@ -59,9 +59,10 @@ impl SsaFonts {
     fn get_ssa_fonts(path: &Path) -> HashSet<String> {
         // in SSA, "{\fnFont Name}" specifies a font override for following text
         // multiple style overrides may be specified in a single pair of "{}"
-        // we only match the last specified font name in each "{}" as it would override previous ones
-        // test it out with "Hello, {\fnFoo Font\fs42\fnBar Font}Rust {\fnrustc\fs10\fncargo\b1}World!"
-        // it will capture "Bar Font" and "cargo"
+        // we only match the last specified font name in each "{}" as it would override
+        // previous ones test it out with "Hello, {\fnFoo Font\fs42\fnBar
+        // Font}Rust {\fnrustc\fs10\fncargo\b1}World!" it will capture "Bar
+        // Font" and "cargo"
         static FONT_OVRD_REGEX: LazyLock<Regex> =
             LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^}\\]+).*?}").unwrap());
 
@@ -80,18 +81,12 @@ impl SsaFonts {
         };
 
         let Some(Section::Styles(styles)) = sub.find_section(SectionType::Styles) else {
-            eprintln!(
-                "The script does not contain styles section: \"{}\"",
-                path.display()
-            );
+            eprintln!("The script does not contain styles section: \"{}\"", path.display());
             return HashSet::new();
         };
 
         let Some(Section::Events(events)) = sub.find_section(SectionType::Events) else {
-            eprintln!(
-                "The script does not contain events section: \"{}\"",
-                path.display()
-            );
+            eprintln!("The script does not contain events section: \"{}\"", path.display());
             return HashSet::new();
         };
 
@@ -110,13 +105,12 @@ impl SsaFonts {
         }
 
         // extract fonts from used styles
-        fonts.extend(styles.iter().filter_map(|style| {
-            if used_styles.contains(style.name) {
-                Some(strip_prefix(style.fontname))
-            } else {
-                None
-            }
-        }));
+        fonts.extend(
+            styles
+                .iter()
+                .filter(|style| used_styles.contains(style.name))
+                .map(|style| strip_prefix(style.fontname)),
+        );
 
         fonts
     }
@@ -135,6 +129,7 @@ impl Display for SsaFonts {
 
 impl FromStr for SsaFonts {
     type Err = std::convert::Infallible;
+
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         Ok(Self(s.lines().map(String::from).collect()))
     }

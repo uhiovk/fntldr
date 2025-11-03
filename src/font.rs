@@ -1,10 +1,13 @@
-use anyhow::{Context, Result};
-use bincode::{Decode, Encode, config::standard, decode_from_std_read, encode_into_std_write};
-use memmap2::Mmap;
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 use std::path::{Path, PathBuf, absolute};
-use ttf_parser::{Face, fonts_in_collection, name_id::FULL_NAME};
+
+use anyhow::{Context, Result};
+use bincode::config::standard;
+use bincode::{Decode, Encode, decode_from_std_read, encode_into_std_write};
+use memmap2::Mmap;
+use ttf_parser::name_id::FULL_NAME;
+use ttf_parser::{Face, fonts_in_collection};
 
 use crate::utils::{is_font, parse_weight, walk_dir};
 
@@ -23,10 +26,7 @@ pub struct FontProviders {
 
 impl FontProviders {
     pub fn new() -> Self {
-        Self {
-            files: Vec::new(),
-            map: HashMap::new(),
-        }
+        Self { files: Vec::new(), map: HashMap::new() }
     }
 
     pub fn load(path: &Path) -> Result<Self> {
@@ -60,13 +60,8 @@ impl FontProviders {
         let mut process = |path: PathBuf| {
             let (names, is_variable) = Self::get_font_names(&path);
             let idx = self.files.len();
-            self.map
-                .extend(names.iter().cloned().map(|name| (name, idx)));
-            self.files.push(FontFile {
-                path,
-                names,
-                is_variable,
-            });
+            self.map.extend(names.iter().cloned().map(|name| (name, idx)));
+            self.files.push(FontFile { path, names, is_variable });
         };
 
         walk_dir(path, is_recursive, &is_font, &mut process);

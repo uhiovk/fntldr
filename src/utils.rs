@@ -57,11 +57,7 @@ pub fn get_cache_path_fallback(path: Option<&Path>) -> PathBuf {
         Some(path) => get_cache_path(Some(path)),
         None => {
             let current_dir_cache = get_cache_path(Some(&PathBuf::from(".")));
-            if current_dir_cache.is_file() {
-                current_dir_cache
-            } else {
-                get_cache_path(None)
-            }
+            if current_dir_cache.is_file() { current_dir_cache } else { get_cache_path(None) }
         }
     }
 }

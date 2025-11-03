@@ -67,7 +67,7 @@ fntldr index --recurse . --cache . --portable
 ### ListAssFonts mode
 
 ```
-listassfonts [SUBTITLES_DIR ...]
+listassfonts [SUBTITLES_DIR]...
 ```
 
 Equivalent to `fntldr list --recurse ...`.

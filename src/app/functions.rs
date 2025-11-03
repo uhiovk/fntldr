@@ -1,7 +1,8 @@
-use anyhow::Result;
 use std::collections::HashSet;
 use std::fs::copy;
 use std::path::PathBuf;
+
+use anyhow::Result;
 
 use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
@@ -219,12 +220,7 @@ pub fn list(
 
 fn get_installed_file(name: &str, finder: &impl FindFont) -> Option<PathBuf> {
     finder.get_font_file(name).unwrap_or_else(|_| {
-        eprintln!(
-            "Error checking installation state of \"{}\", \
-            treating as not installed",
-            name
-        );
-
+        eprintln!("Error checking installation state of \"{}\", treating as not installed", name);
         None
     })
 }
