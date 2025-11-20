@@ -199,6 +199,7 @@ pub fn list(
         if let Some(ref export_path) = export_fonts_path
             && let Some(file) = file
         {
+            #[allow(clippy::unwrap_used, reason = "should not fail")]
             let filename = file.file_name().unwrap();
             if copy(&file, export_path.join(filename)).is_err() {
                 eprintln!(
@@ -228,6 +229,7 @@ fn get_installed_file(name: &str, finder: &impl FindFont) -> Option<PathBuf> {
 fn wait() {
     let (tx, rx) = std::sync::mpsc::channel::<()>();
 
+    #[allow(clippy::expect_used, reason = "should not fail")]
     ctrlc::set_handler(move || {
         let _ = tx.send(());
     })

@@ -17,3 +17,7 @@ ttf-parser = "0.25.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 yeslogic-fontconfig-sys = "6.0.0"
+
+[lints.clippy]
+unwrap-used = "deny"
+expect-used = "deny"

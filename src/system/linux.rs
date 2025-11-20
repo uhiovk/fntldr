@@ -90,6 +90,7 @@ pub struct FontconfigLoader {
 impl FontconfigLoader {
     pub fn new() -> Result<Self> {
         let _tmpdir = tempdir()?;
+        #[allow(clippy::expect_used, reason = "explicit panic")]
         let link = dirs::font_dir().expect("Fonts directory does not exist").join(".fntldrtmp");
 
         if link.is_symlink() {
@@ -116,6 +117,7 @@ impl LoadFontFiles for FontconfigLoader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let file = file.as_ref();
+            #[allow(clippy::unwrap_used, reason = "should not fail")]
             let target = self.link.join(file.file_name().unwrap());
             symlink(file, &target).with_context(|| {
                 format!("Error linking from \"{}\" to \"{}\"", file.display(), target.display())

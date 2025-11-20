@@ -6,6 +6,7 @@ mod utils;
 
 use crate::app::*;
 
+/// fntldr!
 fn tldr() -> ! {
     println!("Made with curiosity by OV");
     std::process::exit(0);
@@ -13,8 +14,9 @@ fn tldr() -> ! {
 
 fn main() {
     // `current_exe` follows symlink on linux
+    #[allow(clippy::unwrap_used, clippy::expect_used, reason = "should not fail")]
     let program_name = std::env::current_exe()
-        .expect("Cannot get current executable")
+        .unwrap()
         .file_name()
         .unwrap()
         .to_string_lossy()

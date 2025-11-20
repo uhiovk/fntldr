@@ -37,6 +37,7 @@ pub fn get_cache_path(path: Option<&Path>) -> PathBuf {
 
     let Some(path) = path else {
         // not specified, use default cache directory
+        #[allow(clippy::expect_used, reason = "explicit panic")]
         return dirs::cache_dir()
             .expect("Cache directory does not exist")
             .join(CACHE_DIR_NAME)
