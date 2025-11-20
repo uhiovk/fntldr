@@ -94,7 +94,7 @@ impl SsaFonts {
         let mut fonts = HashSet::new();
         let mut used_styles = HashSet::new();
 
-        for dialogue in events.iter().filter(|event| event.is_dialogue()) {
+        events.iter().filter(|event| event.is_dialogue()).for_each(|dialogue| {
             used_styles.insert(dialogue.style.to_owned());
 
             // add all inline font overrides in the dialogue
@@ -103,7 +103,7 @@ impl SsaFonts {
                     .captures_iter(dialogue.text)
                     .filter_map(|cap| cap.get(1).map(|m| strip_prefix(m.as_str()))),
             );
-        }
+        });
 
         // extract fonts from used styles
         fonts.extend(

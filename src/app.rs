@@ -45,7 +45,7 @@ pub fn fontloader_app() -> Result<()> {
 pub fn fontloadersub_app() -> Result<()> {
     let cli = FontLoaderSubCli::parse();
     if !get_cache_path(Some(&PathBuf::from("."))).is_file() {
-        println!("Cache not found, building...");
+        eprintln!("Cache not found, building...");
         index(vec![], vec![PathBuf::from(".")], Some(PathBuf::from(".")), false)?;
     }
     load_by(vec![], cli.dirs, Some(PathBuf::from(".")), false)

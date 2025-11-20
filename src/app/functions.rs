@@ -83,7 +83,7 @@ pub fn load_by(
         .filter_map(|name| {
             let opt = cache.file_by_font_name(&name);
             if opt.is_none() {
-                println!("Font \"{}\" missing in index", name);
+                eprintln!("Font \"{}\" missing in index", name);
             }
             opt.map(|file| (name, file))
         })
@@ -165,17 +165,14 @@ pub fn list(
         None => FontProviders::new(),
     };
 
-    let export_fonts_path = match export_fonts_path {
-        Some(path) => {
-            if path.is_dir() {
-                Some(path)
-            } else {
-                eprintln!("Path is not a directory: \"{}\"", path.display());
-                None
-            }
+    let export_fonts_path = export_fonts_path.and_then(|path| {
+        if path.is_dir() {
+            Some(path)
+        } else {
+            eprintln!("Path is not a directory: \"{}\"", path.display());
+            None
         }
-        None => None,
-    };
+    });
 
     if cache_path.is_some() {
         println!(
@@ -196,7 +193,7 @@ pub fn list(
             None
         };
 
-        if let Some(ref export_path) = export_fonts_path
+        if let Some(export_path) = &export_fonts_path
             && let Some(file) = file
         {
             #[allow(clippy::unwrap_used, reason = "should not fail")]
