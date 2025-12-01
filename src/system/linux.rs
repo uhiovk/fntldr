@@ -113,7 +113,7 @@ impl FontconfigLoader {
     }
 }
 
-impl LoadFontFiles for FontconfigLoader {
+unsafe impl LoadFontFiles for FontconfigLoader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let file = file.as_ref();
