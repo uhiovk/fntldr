@@ -15,7 +15,7 @@ use fontconfig_sys::{
 use tempfile::{TempDir, tempdir};
 
 use super::{FindFont, LoadFontFiles};
-use crate::utils::parse_weight;
+use crate::utils::parse_style;
 
 pub struct FontconfigFinder;
 
@@ -30,7 +30,7 @@ pub struct FontconfigFinder;
 // but it'll return the opposite, since no actual font would have the name.
 impl FindFont for FontconfigFinder {
     fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>> {
-        let (family, style) = parse_weight(name.as_ref());
+        let (family, style) = parse_style(name.as_ref());
 
         unsafe {
             // create the pattern

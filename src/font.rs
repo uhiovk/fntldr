@@ -9,7 +9,7 @@ use memmap2::Mmap;
 use ttf_parser::name_id::FULL_NAME;
 use ttf_parser::{Face, fonts_in_collection};
 
-use crate::utils::{is_font, parse_weight, walk_dir};
+use crate::utils::{is_font, parse_style, walk_dir};
 
 #[derive(Encode, Decode)]
 struct FontFile {
@@ -83,7 +83,7 @@ impl FontProviders {
         // fallback:
         // match variable fonts, only by family name
         // assuming variable fonts provide any weight
-        let (family, _) = parse_weight(name);
+        let (family, _) = parse_style(name);
         if let Some(file_idx) = self.map.get(family) {
             let file = &self.files[*file_idx];
             if file.is_variable {

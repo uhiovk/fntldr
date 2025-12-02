@@ -73,25 +73,32 @@ pub fn get_font_list_path(path: Option<&Path>) -> PathBuf {
     PathBuf::from(DEFAULT_LOCATION)
 }
 
-// not parsing other styles because I'm lazy
-pub fn parse_weight(name: &str) -> (&str, &str) {
-    static FONT_WEIGHTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
-        // only consider some common weight names
+pub fn parse_style(name: &str) -> (&str, &str) {
+    static STYLE_NAMES: LazyLock<HashSet<&str>> = LazyLock::new(|| {
+        // only consider some common style names
         [
-            // weights
-            "extralight", "ultralight", "extrathin", "light", "thin", "demilight", "semilight",
-            "book", "regular", "normal", "medium", "demibold", "semibold", "bold", "heavy",
-            "black", "extrabold", "ultrabold",
+            "thin", "extralight", "ultralight", "light", "regular", "normal", "medium", "semibold",
+            "demibold", "bold", "extrabold", "ultrabold", "heavy", "black", "italic", "oblique",
         ]
         .into()
     });
 
-    if let Some((family, weight)) = name.rsplit_once(" ")
-        && FONT_WEIGHTS.contains(weight.to_ascii_lowercase().as_str())
-    {
-        (family, weight)
-    } else {
+    let mut word_start = name.len();
+
+    for (idx, _) in name.rmatch_indices(' ') {
+        let word = &name[idx + 1..word_start];
+        if word.is_empty() || STYLE_NAMES.contains(word.to_ascii_lowercase().as_str()) {
+            word_start = idx;
+        } else {
+            break;
+        }
+    }
+
+    if word_start == name.len() {
         (name, "Regular")
+    } else {
+        let (family, style) = name.split_at(word_start);
+        (family, style.trim_ascii_start())
     }
 }
 
