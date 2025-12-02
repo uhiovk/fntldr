@@ -63,9 +63,9 @@ impl SsaFonts {
         // previous ones test it out with "Hello, {\fnFoo Font\fs42\fnBar
         // Font}Rust {\fnrustc\fs10\fncargo\b1}World!" it will capture "Bar
         // Font" and "cargo"
-        #[allow(clippy::unwrap_used, reason = "compile time")]
+        #[allow(clippy::unwrap_used, reason = "tested")]
         static FONT_OVRD_REGEX: LazyLock<Regex> =
-            LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^}\\]+).*?}").unwrap());
+            LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^{}\\]+).*?}").unwrap());
 
         fn strip_prefix(s: &str) -> String {
             s.strip_prefix('@').unwrap_or(s).to_owned()
@@ -95,7 +95,10 @@ impl SsaFonts {
         let mut used_styles = HashSet::new();
 
         events.iter().filter(|event| event.is_dialogue()).for_each(|dialogue| {
-            used_styles.insert(dialogue.style.to_owned());
+            // add dialogue style font if text does not start with an override
+            if !FONT_OVRD_REGEX.is_match_at(dialogue.text, 0) {
+                used_styles.insert(dialogue.style.to_owned());
+            }
 
             // add all inline font overrides in the dialogue
             fonts.extend(
