@@ -78,24 +78,10 @@ pub fn parse_weight(name: &str) -> (&str, &str) {
     static FONT_WEIGHTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
         // only consider some common weight names
         [
-            "extralight",
-            "ultralight",
-            "extrathin",
-            "light",
-            "thin",
-            "demilight",
-            "semilight",
-            "book",
-            "regular",
-            "normal",
-            "medium",
-            "demibold",
-            "semibold",
-            "bold",
-            "heavy",
-            "black",
-            "extrabold",
-            "ultrabold",
+            // weights
+            "extralight", "ultralight", "extrathin", "light", "thin", "demilight", "semilight",
+            "book", "regular", "normal", "medium", "demibold", "semibold", "bold", "heavy",
+            "black", "extrabold", "ultrabold",
         ]
         .into()
     });
