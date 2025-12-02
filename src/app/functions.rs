@@ -149,6 +149,11 @@ pub fn list(
     const IN_INDEX_INDICATOR: &str = "-";
     const NOT_INSTALLED_INDICATOR: &str = " ";
 
+    #[cfg(target_os = "windows")]
+    if export_fonts_path.is_some() {
+        unimplemented!("Exporting fonts on Windows is not yet implemeted");
+    }
+
     let mut ssa_fonts = SsaFonts::new();
 
     for dir in direct_dirs {

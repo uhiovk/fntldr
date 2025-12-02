@@ -1,6 +1,6 @@
 [package]
 name = "fntldr"
-version = "0.1.1"
+version = "0.2.0-beta1"
 edition = "2024"
 
 [dependencies]
@@ -17,6 +17,9 @@ ttf-parser = "0.25.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 yeslogic-fontconfig-sys = "6.0.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Graphics_Gdi"] }
 
 [lints.clippy]
 unwrap-used = "deny"

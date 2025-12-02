@@ -1,6 +1,9 @@
 #[cfg(target_os = "linux")]
 mod linux;
 
+#[cfg(target_os = "windows")]
+mod windows;
+
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
@@ -17,10 +20,16 @@ pub unsafe trait LoadFontFiles {
 
 pub fn get_finder() -> Result<impl FindFont> {
     #[cfg(target_os = "linux")]
-    Ok(self::linux::FontconfigFinder)
+    return Ok(self::linux::FontconfigFinder);
+
+    #[cfg(target_os = "windows")]
+    return Ok(self::windows::Finder);
 }
 
 pub fn get_loader() -> Result<impl LoadFontFiles> {
     #[cfg(target_os = "linux")]
-    self::linux::FontconfigLoader::new()
+    return self::linux::FontconfigLoader::new();
+
+    #[cfg(target_os = "windows")]
+    return Ok(self::windows::Loader::new());
 }
