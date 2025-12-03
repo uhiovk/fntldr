@@ -1,6 +1,8 @@
 # fntldr
 
-`fntldr` can temporarily load fonts to use with other apps, it is a replacement of `FontLoader`, `FontLoaderSub` and `ListAssFonts` on GNU/Linux.
+`fntldr` can temporarily install (or "load") fonts in the system. It is also an easier-to-use replacement of `FontLoader`, `FontLoaderSub` and `ListAssFonts`.
+
+The program supports GNU/Linux (using Fontconfig) and Windows.
 
 ## Usage
 
@@ -37,6 +39,8 @@ By default, it tries to load cache from default location and append or overwrite
 ```
 fntldr list [--dir DIRECTORY]... [--recurse DIRECTORY]... [--cache [CACHE]] [--font-list] [--export DIRECTORY]
 ```
+
+Font reexporting is not yet available on Windows.
 
 ## Drag-and-drop Compatibility
 
