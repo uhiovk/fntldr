@@ -53,5 +53,8 @@ pub fn fontloadersub_app() -> Result<()> {
 
 pub fn listassfonts_app() -> Result<()> {
     let cli = ListAssFontsCli::parse();
-    list(vec![], cli.dirs, None, false, None)
+    list(vec![], cli.dirs, None, false, None)?;
+    println!("Press enter to exit");
+    let _ = std::io::stdin().read_line(&mut String::new());
+    Ok(())
 }
