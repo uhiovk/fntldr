@@ -32,7 +32,7 @@ When `--cache` is not specified, it first try to load `./fntldr_cache.bin`, if n
 fntldr index [--dir DIRECTORY]... [--recurse DIRECTORY]... [--cache CACHE] [--portable]
 ```
 
-By default, it tries to load cache from default location and append or overwrite entries, or specify `--cache` to operate on the given cache file. It will overwrite the file.
+By default, it tries to load cache from default location and update it, or you can specify `--cache` to operate on given cache file.
 
 ### List used fonts in (A)SSA subtitles
 
