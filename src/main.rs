@@ -35,7 +35,7 @@ fn main() {
 
     if let Err(error) = result {
         eprintln!("{}\n", error);
-        eprint!("Press enter to exit...");
+        eprintln!("Press enter to exit...");
         let _ = std::io::stdin().read_line(&mut String::new());
         std::process::exit(1);
     }

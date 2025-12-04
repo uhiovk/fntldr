@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fs::{copy, remove_file};
+use std::io::{Write, stdin, stdout};
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -223,7 +224,23 @@ pub fn list(
 }
 
 pub fn clear(cache_path: Option<PathBuf>) -> Result<()> {
-    remove_file(get_cache_path(cache_path.as_deref()))?;
+    let cache_path = get_cache_path(cache_path.as_deref());
+
+    println!("Are you sure to remove this file? {}", cache_path.display());
+    print!("(y/N): ");
+    stdout().flush()?;
+
+    let mut answer = String::new();
+    stdin().read_line(&mut answer)?;
+    let answer = answer.trim_ascii_end();
+    if !(answer == "y" || answer == "Y") {
+        println!("User aborted operation");
+        return Ok(());
+    }
+
+    remove_file(cache_path)?;
+    println!("File removed successfully");
+
     Ok(())
 }
 
