@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::fs::copy;
+use std::fs::{copy, remove_file};
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -108,11 +108,12 @@ pub fn index(
     recursive_dirs: Vec<PathBuf>,
     cache_path: Option<PathBuf>,
     is_absolute: bool,
+    rebuild: bool,
 ) -> Result<()> {
     let (cache_is_specified, cache_path) =
         (cache_path.is_some(), get_cache_path(cache_path.as_deref()));
 
-    let mut cache = if cache_is_specified && cache_path.is_file() {
+    let mut cache = if !rebuild && cache_is_specified && cache_path.is_file() {
         println!("Loading cache from \"{}\"", cache_path.display());
         FontProviders::load(&cache_path)?
     } else {
@@ -218,6 +219,11 @@ pub fn list(
         println!("Exported font list to \"./fonts.txt\"");
     }
 
+    Ok(())
+}
+
+pub fn clear(cache_path: Option<PathBuf>) -> Result<()> {
+    remove_file(get_cache_path(cache_path.as_deref()))?;
     Ok(())
 }
 

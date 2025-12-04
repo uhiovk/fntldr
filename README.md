@@ -1,6 +1,6 @@
 # fntldr
 
-`fntldr` can temporarily install (or "load") fonts in the system. It is also an easier-to-use replacement of `FontLoader`, `FontLoaderSub` and `ListAssFonts`.
+`fntldr` can temporarily install (or "load") fonts into the system. It is also an easier-to-use replacement of `FontLoader`, `FontLoaderSub` and `ListAssFonts`.
 
 The program supports GNU/Linux (using Fontconfig) and Windows.
 
@@ -52,7 +52,7 @@ Rename the executable to `fontloader` / `fontloadersub` / `listassfonts` (case i
 fontloader [FONT_FILE]...
 ```
 
-Equivalent to `fntldr load ...` or `fntldr load --dir .` (without parameters).
+Equivalent to `fntldr load ...` or `fntldr load --dir .`.
 If running without any parameters, it loads all font files in the current working directory.
 
 ### FontLoaderSub mode
@@ -61,8 +61,8 @@ If running without any parameters, it loads all font files in the current workin
 fontloadersub [SUBTITLES_DIR]...
 ```
 
-Equivalent to `fntldr load-by --recurse ...` after cache is built.
-If the cache is not found, it recursively scans the current working directory for font files, and build the cache, which is the same as running:
+Equivalent to `fntldr load-by --recurse ...` if cache is found at `./fntldr_cache.bin`.
+If the index cache is not found, it would recursively scans the current working directory for font files and build the cache, like running:
 
 ```
 fntldr index --recurse . --cache . --portable
@@ -76,9 +76,9 @@ listassfonts [SUBTITLES_DIR]...
 
 Equivalent to `fntldr list --recurse ...`.
 
-The program currently does not have all the features as in `ListAssFonts`, and they will be added at `fntldr list`, this mode is just for simple listing.
+The program currently does not have all the features as in `ListAssFonts`, and they will be added in `fntldr list`, this mode is just for simple listing.
 
-## Font installation check using `Fontconfig`
+## Problems with font installation check using `Fontconfig`
 
 The program may load unnecassary fonts if you have aliases in your config, and `fntldr list` may mark them as not installed. So sad!
 

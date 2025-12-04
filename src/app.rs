@@ -22,8 +22,8 @@ pub fn app() -> Result<()> {
             load_by(direct_dirs, recursive_dirs, cache, load_font_list)
         }
 
-        Commands::Index { direct_dirs, recursive_dirs, cache, is_absolute } => {
-            index(direct_dirs, recursive_dirs, cache, is_absolute)
+        Commands::Index { direct_dirs, recursive_dirs, cache, is_absolute, rebuild } => {
+            index(direct_dirs, recursive_dirs, cache, is_absolute, rebuild)
         }
 
         Commands::List {
@@ -33,6 +33,8 @@ pub fn app() -> Result<()> {
             export_font_list,
             export_fonts_path,
         } => list(direct_dirs, recursive_dirs, cache, export_font_list, export_fonts_path),
+
+        Commands::Clear { cache } => clear(cache),
     }
 }
 
@@ -46,7 +48,7 @@ pub fn fontloadersub_app() -> Result<()> {
     let cli = FontLoaderSubCli::parse();
     if !get_cache_path(Some(&PathBuf::from("."))).is_file() {
         eprintln!("Cache not found, building...");
-        index(vec![], vec![PathBuf::from(".")], Some(PathBuf::from(".")), false)?;
+        index(vec![], vec![PathBuf::from(".")], Some(PathBuf::from(".")), false, false)?;
     }
     load_by(vec![], cli.dirs, Some(PathBuf::from(".")), false)
 }

@@ -4,7 +4,7 @@ use clap::{ArgAction, Parser, Subcommand};
 
 // default mode
 
-/// fntldr by uHioVK
+/// Temporarily install fonts in (A)SSA subtitles
 #[derive(Parser)]
 #[command(version)]
 pub struct Cli {
@@ -62,9 +62,13 @@ pub enum Commands {
         #[arg(short, long)]
         cache: Option<PathBuf>,
 
-        /// Avoid translate saved paths into absolute
+        /// Avoid translate saved paths to absolute
         #[arg(short = 'p', long = "portable", action = ArgAction::SetFalse)]
         is_absolute: bool,
+
+        /// Clear the cache and rebuild it fresh
+        #[arg(short = 'b', long)]
+        rebuild: bool,
     },
 
     /// List used fonts in (A)SSA subtitles
@@ -86,9 +90,16 @@ pub enum Commands {
         #[arg(short = 'l', long = "font-list")]
         export_font_list: bool,
 
-        /// Export installed fonts to directory
-        #[arg(short = 'x', long = "export", value_name = "DIRECTORY")]
+        /// Export installed fonts
+        #[arg(short = 'x', long = "export", value_name = "TARGET")]
         export_fonts_path: Option<PathBuf>,
+    },
+
+    /// Delete font index cache file
+    Clear {
+        /// Manually specify cache file
+        #[arg(short, long)]
+        cache: Option<PathBuf>,
     },
 }
 
