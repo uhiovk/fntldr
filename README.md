@@ -29,7 +29,7 @@ When `--cache` is not specified, it first try to load `./fntldr_cache.bin`, if n
 ### Build index cache
 
 ```
-fntldr index [--dir DIRECTORY]... [--recurse DIRECTORY]... [--cache CACHE] [--portable]
+fntldr index [--dir DIRECTORY]... [--recurse DIRECTORY]... [--cache CACHE] [--portable] [--rebuild]
 ```
 
 By default, it tries to load cache from default location and update it, or you can specify `--cache` to operate on given cache file.
@@ -41,6 +41,12 @@ fntldr list [--dir DIRECTORY]... [--recurse DIRECTORY]... [--cache [CACHE]] [--f
 ```
 
 Font reexporting is not yet available on Windows.
+
+### Delete index cache file
+
+```
+fntldr clear [--cache CACHE]
+```
 
 ## Drag-and-drop Compatibility
 
