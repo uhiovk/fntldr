@@ -113,11 +113,11 @@ impl FontconfigLoader {
     }
 }
 
-unsafe impl LoadFontFiles for FontconfigLoader {
+impl LoadFontFiles for FontconfigLoader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let file = file.as_ref();
-            #[allow(clippy::unwrap_used, reason = "should not fail")]
+            #[allow(clippy::unwrap_used, reason = "explicit panic as caller fault")]
             let target = self.link.join(file.file_name().unwrap());
             symlink(file, &target).with_context(|| {
                 format!("Error linking from \"{}\" to \"{}\"", file.display(), target.display())
@@ -132,18 +132,14 @@ unsafe impl LoadFontFiles for FontconfigLoader {
 
         Ok(())
     }
-}
 
-impl Drop for FontconfigLoader {
-    fn drop(&mut self) {
+    fn unload_all(self) {
         if remove_dir_all(&self.link).is_err() {
             eprintln!("Error removing symlink \"{}\"", self.link.display());
         }
 
-        let result = unsafe { FcConfigBuildFonts(ptr::null_mut()) };
-
-        if result == 0 {
-            eprintln!("FcConfigBuildFonts failed");
+        if unsafe { FcConfigBuildFonts(ptr::null_mut()) } == 0 {
+            eprintln!("Fontconfig cache reloading failed");
             eprintln!("Please run `fc-cache` yourself");
         }
     }

@@ -7,7 +7,7 @@ use anyhow::Result;
 
 use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
-use crate::system::{FindFont, LoadFontFiles, get_finder, get_loader};
+use crate::system::{FindFont, get_finder, get_loader};
 use crate::utils::{
     get_cache_path, get_cache_path_fallback, get_font_list_path, is_font, walk_dir,
 };
@@ -203,7 +203,7 @@ pub fn list(
         if let Some(export_path) = &export_fonts_path
             && let Some(file) = file
         {
-            #[allow(clippy::unwrap_used, reason = "should not fail")]
+            #[allow(clippy::unwrap_used, reason = "guaranteed valid file name")]
             let filename = file.file_name().unwrap();
             if copy(&file, export_path.join(filename)).is_err() {
                 eprintln!(

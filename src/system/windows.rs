@@ -62,7 +62,7 @@ impl Loader {
     }
 }
 
-unsafe impl LoadFontFiles for Loader {
+impl LoadFontFiles for Loader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let path_utf16: Vec<_> = file.as_ref().as_os_str().encode_wide().chain([0]).collect();
@@ -74,16 +74,11 @@ unsafe impl LoadFontFiles for Loader {
 
         Ok(())
     }
-}
 
-impl Drop for Loader {
-    fn drop(&mut self) {
+    fn unload_all(self) {
         for path_utf16 in &self.loaded {
             if unsafe { RemoveFontResourceW(path_utf16.as_ptr()) } == 0 {
-                eprintln!(
-                    "RemoveFontResource failed to remove file: {}",
-                    String::from_utf16_lossy(path_utf16)
-                );
+                eprintln!("Failed to unregister file: {}", String::from_utf16_lossy(path_utf16));
             }
         }
     }
