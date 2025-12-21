@@ -6,10 +6,8 @@ mod utils;
 
 use crate::app::*;
 
-/// The snowy egg of...
-/// fntldr!
 fn tldr() -> ! {
-    println!("Made with curiosity by OV and NOV\n");
+    println!("Made with curiosity by OV");
     println!("Thank you for supporting");
     std::process::exit(0);
 }
@@ -26,7 +24,7 @@ fn main() {
     let program_name = program_name.strip_suffix(".exe").unwrap_or(&program_name);
 
     let result = match program_name {
-        "snowyegg" => tldr(),
+        "friedegg" => tldr(),
         "fontloader" => fontloader_app(),
         "fontloadersub" => fontloadersub_app(),
         "listassfonts" => listassfonts_app(),
