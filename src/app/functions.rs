@@ -7,7 +7,7 @@ use anyhow::Result;
 
 use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
-use crate::system::{FindFont, get_finder, get_loader};
+use crate::system::{Finder, Loader};
 use crate::utils::{
     get_cache_path, get_cache_path_fallback, get_font_list_path, is_font, walk_dir,
 };
@@ -34,7 +34,7 @@ pub fn load(
         return Ok(());
     }
 
-    let mut loader = get_loader()?;
+    let mut loader = Loader::new()?;
 
     loader.load(&all_files)?;
 
@@ -74,8 +74,8 @@ pub fn load_by(
         return Ok(());
     }
 
-    let finder = get_finder()?;
-    let mut loader = get_loader()?;
+    let finder = Finder::new()?;
+    let mut loader = Loader::new()?;
 
     let (names, files): (Vec<_>, HashSet<_>) = ssa_fonts
         .sorted()
@@ -166,7 +166,7 @@ pub fn list(
         ssa_fonts.index(&dir, true);
     }
 
-    let finder = get_finder()?;
+    let finder = Finder::new()?;
     let cache = match &cache_path {
         Some(path_opt) => FontProviders::load(&get_cache_path(path_opt.as_deref()))?,
         None => FontProviders::new(),
@@ -244,7 +244,7 @@ pub fn clear(cache_path: Option<PathBuf>) -> Result<()> {
     Ok(())
 }
 
-fn get_installed_file(name: &str, finder: &impl FindFont) -> Option<PathBuf> {
+fn get_installed_file(name: &str, finder: &Finder) -> Option<PathBuf> {
     finder.get_font_file(name).unwrap_or_else(|_| {
         eprintln!("Error checking installation state of \"{}\", treating as not installed", name);
         None

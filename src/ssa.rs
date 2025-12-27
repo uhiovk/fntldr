@@ -14,15 +14,17 @@ use regex::Regex;
 
 use crate::utils::{is_ssa, walk_dir};
 
-pub struct SsaFonts(HashSet<String>);
+pub struct SsaFonts {
+    fonts: HashSet<String>,
+}
 
 impl SsaFonts {
     pub fn new() -> Self {
-        Self(HashSet::new())
+        Self { fonts: HashSet::new() }
     }
 
     pub fn inner(&self) -> &HashSet<String> {
-        &self.0
+        &self.fonts
     }
 
     pub fn load(path: &Path) -> Result<Self> {
@@ -45,13 +47,13 @@ impl SsaFonts {
     }
 
     pub fn index(&mut self, path: &Path, is_recursive: bool) {
-        let mut process = |path: PathBuf| self.0.extend(Self::get_ssa_fonts(&path));
+        let mut process = |path: PathBuf| self.fonts.extend(Self::get_ssa_fonts(&path));
 
         walk_dir(path, is_recursive, &is_ssa, &mut process)
     }
 
     pub fn sorted(&self) -> Vec<String> {
-        let mut vec: Vec<_> = self.0.iter().cloned().collect();
+        let mut vec: Vec<_> = self.fonts.iter().cloned().collect();
         vec.sort_unstable();
         vec
     }
@@ -97,14 +99,14 @@ impl SsaFonts {
         events.iter().filter(|event| event.is_dialogue()).for_each(|dialogue| {
             // add dialogue style font if text does not start with an override
             if !FONT_OVRD_REGEX.is_match_at(dialogue.text, 0) {
-                used_styles.insert(dialogue.style.to_owned());
+                used_styles.insert(dialogue.style);
             }
 
             // add all inline font overrides in the dialogue
             fonts.extend(
                 FONT_OVRD_REGEX
                     .captures_iter(dialogue.text)
-                    .filter_map(|cap| cap.get(1).map(|m| strip_prefix(m.as_str()))),
+                    .filter_map(|cap| cap.get(1).map(|name| strip_prefix(name.as_str()))),
             );
         });
 
@@ -135,6 +137,6 @@ impl FromStr for SsaFonts {
     type Err = std::convert::Infallible;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(Self(s.lines().map(String::from).collect()))
+        Ok(Self { fonts: s.lines().map(String::from).collect() })
     }
 }

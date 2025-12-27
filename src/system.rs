@@ -8,20 +8,43 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-pub trait FindFont {
-    fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>>;
+#[cfg(target_os = "linux")]
+type FinderImpl = self::linux::FontconfigFinder;
+
+#[cfg(target_os = "windows")]
+type FinderImpl = self::windows::Finder;
+
+pub struct Finder(FinderImpl);
+
+impl Finder {
+    pub fn new() -> Result<Self> {
+        #[cfg(target_os = "linux")]
+        return Ok(Self(self::linux::FontconfigFinder));
+
+        #[cfg(target_os = "windows")]
+        return Ok(Self(self::windows::Finder));
+    }
+
+    pub fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>> {
+        self.0.get_font_file(name)
+    }
 }
 
-pub trait LoadFontFiles {
-    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()>;
-    fn unload_all(self);
-}
+#[cfg(target_os = "linux")]
+type LoaderImpl = self::linux::FontconfigLoader;
 
-pub struct LoaderWrapper<T: LoadFontFiles>(Option<T>);
+#[cfg(target_os = "windows")]
+type LoaderImpl = self::windows::Loader;
 
-impl<T: LoadFontFiles> LoaderWrapper<T> {
-    fn new(loader: T) -> Self {
-        Self(Some(loader))
+pub struct Loader(Option<LoaderImpl>);
+
+impl Loader {
+    pub fn new() -> Result<Self> {
+        #[cfg(target_os = "linux")]
+        return Ok(Self(Some(self::linux::FontconfigLoader::new()?)));
+
+        #[cfg(target_os = "windows")]
+        return Ok(Self(Some(self::windows::Loader::new())));
     }
 
     pub fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
@@ -30,25 +53,18 @@ impl<T: LoadFontFiles> LoaderWrapper<T> {
     }
 }
 
-impl<T: LoadFontFiles> Drop for LoaderWrapper<T> {
+impl Drop for Loader {
     fn drop(&mut self) {
         #[allow(clippy::unwrap_used, reason = "guaranteed `Some`")]
         self.0.take().unwrap().unload_all();
     }
 }
 
-pub fn get_finder() -> Result<impl FindFont> {
-    #[cfg(target_os = "linux")]
-    return Ok(self::linux::FontconfigFinder);
-
-    #[cfg(target_os = "windows")]
-    return Ok(self::windows::Finder);
+trait FindFont {
+    fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>>;
 }
 
-pub fn get_loader() -> Result<LoaderWrapper<impl LoadFontFiles>> {
-    #[cfg(target_os = "linux")]
-    return Ok(LoaderWrapper::new(self::linux::FontconfigLoader::new()?));
-
-    #[cfg(target_os = "windows")]
-    return Ok(LoaderWrapper::new(self::windows::Loader::new()));
+trait LoadFontFiles {
+    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()>;
+    fn unload_all(self);
 }
