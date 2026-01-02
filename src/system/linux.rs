@@ -183,7 +183,7 @@ unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
                 != FcResultMatch)
                 .then_some(match_res_ptr)
         })
-        .filter(|match_res_ptr| match_res_ptr.is_null())
+        .filter(|match_res_ptr| !match_res_ptr.is_null())
         .map(|match_res_ptr| {
             unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
                 .to_string_lossy()
