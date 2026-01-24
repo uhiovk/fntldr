@@ -8,4 +8,3 @@ overflow_delimited_expr = true
 reorder_impl_items = true
 short_array_element_width_threshold = 30
 use_small_heuristics = "Max"
-wrap_comments = true

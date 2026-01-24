@@ -175,19 +175,27 @@ unsafe fn file_in_pattern(pattern: &FcPatternPtr) -> Result<PathBuf> {
 }
 
 unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
-    (0..)
-        .map_while(|i| {
-            let mut match_res_ptr = ptr::null_mut();
+    let mut families = Vec::new();
 
-            (unsafe { FcPatternGetString(pattern.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) }
-                != FcResultMatch)
-                .then_some(match_res_ptr)
-        })
-        .filter(|match_res_ptr| !match_res_ptr.is_null())
-        .map(|match_res_ptr| {
-            unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
-                .to_string_lossy()
-                .to_ascii_lowercase()
-        })
-        .collect()
+    for i in 0.. {
+        let mut match_res_ptr = ptr::null_mut();
+        let result =
+            unsafe { FcPatternGetString(pattern.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) };
+
+        if result != FcResultMatch {
+            break;
+        }
+
+        if match_res_ptr.is_null() {
+            continue;
+        }
+
+        let name = unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
+            .to_string_lossy()
+            .to_ascii_lowercase();
+
+        families.push(name);
+    }
+
+    families
 }

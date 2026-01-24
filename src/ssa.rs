@@ -47,7 +47,7 @@ impl SsaFonts {
     }
 
     pub fn index(&mut self, path: &Path, is_recursive: bool) {
-        let mut process = |path: PathBuf| self.fonts.extend(Self::get_ssa_fonts(&path));
+        let mut process = |path: PathBuf| self.fonts.extend(get_ssa_fonts(&path));
 
         walk_dir(path, is_recursive, &is_ssa, &mut process)
     }
@@ -56,69 +56,6 @@ impl SsaFonts {
         let mut vec: Vec<_> = self.fonts.iter().cloned().collect();
         vec.sort_unstable();
         vec
-    }
-
-    fn get_ssa_fonts(path: &Path) -> HashSet<String> {
-        // in SSA, "{\fnFont Name}" specifies a font override for following text
-        // multiple style overrides may be specified in a single pair of "{}"
-        // we only match the last specified font name in each "{}" as it would override
-        // previous ones test it out with "Hello, {\fnFoo Font\fs42\fnBar
-        // Font}Rust {\fnrustc\fs10\fncargo\b1}World!" it will capture "Bar
-        // Font" and "cargo"
-        #[allow(clippy::unwrap_used, reason = "tested")]
-        static FONT_OVRD_REGEX: LazyLock<Regex> =
-            LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^{}\\]+).*?}").unwrap());
-
-        fn strip_prefix(s: &str) -> String {
-            s.strip_prefix('@').unwrap_or(s).to_owned()
-        }
-
-        let Ok(content) = read_to_string(path) else {
-            eprintln!("Error reading file \"{}\"", path.display());
-            return HashSet::new();
-        };
-
-        let Ok(sub) = Script::parse(&content) else {
-            eprintln!("Error parsing (A)SSA file \"{}\"", path.display());
-            return HashSet::new();
-        };
-
-        let Some(Section::Styles(styles)) = sub.find_section(SectionType::Styles) else {
-            eprintln!("The script does not contain styles section: \"{}\"", path.display());
-            return HashSet::new();
-        };
-
-        let Some(Section::Events(events)) = sub.find_section(SectionType::Events) else {
-            eprintln!("The script does not contain events section: \"{}\"", path.display());
-            return HashSet::new();
-        };
-
-        let mut fonts = HashSet::new();
-        let mut used_styles = HashSet::new();
-
-        events.iter().filter(|event| event.is_dialogue()).for_each(|dialogue| {
-            // add dialogue style font if text does not start with an override
-            if !FONT_OVRD_REGEX.is_match_at(dialogue.text, 0) {
-                used_styles.insert(dialogue.style);
-            }
-
-            // add all inline font overrides in the dialogue
-            fonts.extend(
-                FONT_OVRD_REGEX
-                    .captures_iter(dialogue.text)
-                    .filter_map(|cap| cap.get(1).map(|name| strip_prefix(name.as_str()))),
-            );
-        });
-
-        // extract fonts from used styles
-        fonts.extend(
-            styles
-                .iter()
-                .filter(|style| used_styles.contains(style.name))
-                .map(|style| strip_prefix(style.fontname)),
-        );
-
-        fonts
     }
 }
 
@@ -136,7 +73,69 @@ impl Display for SsaFonts {
 impl FromStr for SsaFonts {
     type Err = std::convert::Infallible;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self { fonts: s.lines().map(String::from).collect() })
     }
+}
+
+fn get_ssa_fonts(path: &Path) -> HashSet<String> {
+    // in SSA, "{\fnFont Name}" specifies a font override for following text
+    // multiple style overrides may be specified in a single pair of "{}"
+    // we only match the last specified font name in each "{}" as it would override previous ones
+    // test it out with "Hello, {\fnFoo Font\fs42\fnBar Font}Rust {\fnrustc\fs10\fncargo\b1}World!"
+    // it will capture "Bar Font" and "cargo"
+    #[allow(clippy::unwrap_used, reason = "tested")]
+    static FONT_OVRD_REGEX: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^{}\\]+).*?}").unwrap());
+
+    fn strip_prefix(s: &str) -> String {
+        s.strip_prefix('@').unwrap_or(s).to_owned()
+    }
+
+    let Ok(content) = read_to_string(path) else {
+        eprintln!("Error reading file \"{}\"", path.display());
+        return HashSet::new();
+    };
+
+    let Ok(sub) = Script::parse(&content) else {
+        eprintln!("Error parsing (A)SSA file \"{}\"", path.display());
+        return HashSet::new();
+    };
+
+    let Some(Section::Styles(styles)) = sub.find_section(SectionType::Styles) else {
+        eprintln!("The script does not contain styles section: \"{}\"", path.display());
+        return HashSet::new();
+    };
+
+    let Some(Section::Events(events)) = sub.find_section(SectionType::Events) else {
+        eprintln!("The script does not contain events section: \"{}\"", path.display());
+        return HashSet::new();
+    };
+
+    let mut fonts = HashSet::new();
+    let mut used_styles = HashSet::new();
+
+    events.iter().filter(|event| event.is_dialogue()).for_each(|dialogue| {
+        // add dialogue style font if text does not start with an override
+        if !FONT_OVRD_REGEX.is_match_at(dialogue.text, 0) {
+            used_styles.insert(dialogue.style);
+        }
+
+        // add all inline font overrides in the dialogue
+        fonts.extend(
+            FONT_OVRD_REGEX
+                .captures_iter(dialogue.text)
+                .filter_map(|cap| cap.get(1).map(|name| strip_prefix(name.as_str()))),
+        );
+    });
+
+    // extract fonts from used styles
+    fonts.extend(
+        styles
+            .iter()
+            .filter(|style| used_styles.contains(style.name))
+            .map(|style| strip_prefix(style.fontname)),
+    );
+
+    fonts
 }

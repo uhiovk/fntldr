@@ -58,7 +58,7 @@ impl FontProviders {
 
     pub fn index(&mut self, path: &Path, is_recursive: bool) {
         let mut process = |path: PathBuf| {
-            let (names, is_variable) = Self::get_font_names(&path);
+            let (names, is_variable) = get_font_names(&path);
             let idx = self.files.len();
             self.map.extend(names.iter().cloned().map(|name| (name, idx)));
             self.files.push(FontFile { path, names, is_variable });
@@ -93,40 +93,40 @@ impl FontProviders {
 
         None
     }
+}
 
-    fn get_font_names(path: &Path) -> (Vec<String>, bool) {
-        let Ok(file) = File::open(path) else {
-            eprintln!("Error reading file \"{}\"", path.display());
-            return (Vec::new(), false);
-        };
+fn get_font_names(path: &Path) -> (Vec<String>, bool) {
+    let Ok(file) = File::open(path) else {
+        eprintln!("Error reading file \"{}\"", path.display());
+        return (Vec::new(), false);
+    };
 
-        // memmap so we don't have to read the whole file
-        let Ok(mapped) = (unsafe { Mmap::map(&file) }) else {
-            eprintln!("Error reading file \"{}\"", path.display());
-            return (Vec::new(), false);
-        };
+    // memmap so we don't have to read the whole file
+    let Ok(mapped) = (unsafe { Mmap::map(&file) }) else {
+        eprintln!("Error reading file \"{}\"", path.display());
+        return (Vec::new(), false);
+    };
 
-        // would return None for a regular font file (.ttf / .otf)
-        let num_faces = fonts_in_collection(&mapped).unwrap_or(1);
+    // would return None for a regular font file (.ttf / .otf)
+    let num_faces = fonts_in_collection(&mapped).unwrap_or(1);
 
-        let mut is_variable = false;
+    let mut is_variable = false;
 
-        let names = (0..num_faces)
-            .filter_map(|i| Face::parse(&mapped, i).ok())
-            // no sane people would put variable and
-            // non-variable fonts in a single collection
-            .inspect(|face| is_variable = face.is_variable())
-            .flat_map(|face| face.names())
-            .filter(|name| name.name_id == FULL_NAME)
-            .filter_map(|name| {
-                // try UTF-16 first
-                name.to_string().or_else(
-                    // then try UTF-8
-                    || String::from_utf8(name.name.to_vec()).ok(),
-                )
-            })
-            .collect();
+    let names = (0..num_faces)
+        .filter_map(|i| Face::parse(&mapped, i).ok())
+        // no sane people would put variable and
+        // non-variable fonts in a single collection
+        .inspect(|face| is_variable = face.is_variable())
+        .flat_map(|face| face.names())
+        .filter(|name| name.name_id == FULL_NAME)
+        .filter_map(|name| {
+            // try UTF-16 first
+            name.to_string().or_else(
+                // then try UTF-8
+                || String::from_utf8(name.name.to_vec()).ok(),
+            )
+        })
+        .collect();
 
-        (names, is_variable)
-    }
+    (names, is_variable)
 }
