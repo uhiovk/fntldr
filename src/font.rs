@@ -3,22 +3,22 @@ use std::fs::{File, create_dir_all};
 use std::path::{Path, PathBuf, absolute};
 
 use anyhow::{Context, Result};
-use bincode::config::standard;
-use bincode::{Decode, Encode, decode_from_std_read, encode_into_std_write};
+use bincode::{deserialize_from, serialize_into};
 use memmap2::Mmap;
+use serde::{Deserialize, Serialize};
 use ttf_parser::name_id::FULL_NAME;
 use ttf_parser::{Face, fonts_in_collection};
 
 use crate::utils::{is_font, parse_style, walk_dir};
 
-#[derive(Encode, Decode)]
+#[derive(Serialize, Deserialize)]
 struct FontFile {
     path: PathBuf,
     names: Vec<String>,
     is_variable: bool,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Serialize, Deserialize)]
 pub struct FontProviders {
     files: Vec<FontFile>,
     map: HashMap<String, usize>,
@@ -33,7 +33,7 @@ impl FontProviders {
         let mut file = File::open(path)
             .with_context(|| format!("Error opening file \"{}\"", path.display()))?;
 
-        decode_from_std_read(&mut file, standard())
+        deserialize_from(&mut file)
             .with_context(|| format!("Error reading file \"{}\"", path.display()))
     }
 
@@ -50,7 +50,7 @@ impl FontProviders {
             .open(path)
             .with_context(|| format!("Error opening file \"{}\"", path.display()))?;
 
-        encode_into_std_write(self, &mut file, standard())
+        serialize_into(&mut file, self)
             .with_context(|| format!("Error writing file \"{}\"", path.display()))?;
 
         Ok(())

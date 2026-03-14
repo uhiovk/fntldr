@@ -48,14 +48,12 @@ impl Loader {
     }
 
     pub fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
-        #[allow(clippy::unwrap_used, reason = "guaranteed `Some`")]
         self.0.as_mut().unwrap().load(files)
     }
 }
 
 impl Drop for Loader {
     fn drop(&mut self) {
-        #[allow(clippy::unwrap_used, reason = "guaranteed `Some`")]
         self.0.take().unwrap().unload_all();
     }
 }

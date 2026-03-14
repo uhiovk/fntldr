@@ -84,7 +84,6 @@ fn get_ssa_fonts(path: &Path) -> HashSet<String> {
     // we only match the last specified font name in each "{}" as it would override previous ones
     // test it out with "Hello, {\fnFoo Font\fs42\fnBar Font}Rust {\fnrustc\fs10\fncargo\b1}World!"
     // it will capture "Bar Font" and "cargo"
-    #[allow(clippy::unwrap_used, reason = "tested")]
     static FONT_OVRD_REGEX: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"\{[^{}]*\\fn([^{}\\]+).*?}").unwrap());
 

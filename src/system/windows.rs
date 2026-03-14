@@ -45,7 +45,9 @@ impl FindFont for Finder {
                 &mut found_match as *mut _ as LPARAM,
                 0,
             );
-            ReleaseDC(std::ptr::null_mut(), hdc);
+            if ReleaseDC(std::ptr::null_mut(), hdc) == 0 {
+                bail!("ReleaseDC failed");
+            }
         }
 
         if found_match { Ok(Some(PathBuf::new())) } else { Ok(None) }

@@ -34,7 +34,7 @@ impl FindFont for FontconfigFinder {
 
         unsafe {
             // create the pattern
-            let pattern = FcPatternPtr(FcPatternCreate());
+            let pattern = Pattern(FcPatternCreate());
 
             ensure!(!pattern.0.is_null(), "FcPatternCreate returned null pointer");
 
@@ -64,18 +64,18 @@ impl FindFont for FontconfigFinder {
             FcDefaultSubstitute(pattern.0);
 
             // match the pattern, basically equivalent to `fc-match`
-            let font_match = FcPatternPtr(FcFontMatch(ptr::null_mut(), pattern.0, &mut 0));
+            let font_match = Pattern(FcFontMatch(ptr::null_mut(), pattern.0, &mut 0));
 
             ensure!(!font_match.0.is_null(), "FcFontMatch returned null pointer");
 
             // check all family names of the returned best match
-            let is_exact = families_in_pattern(&font_match).contains(&family.to_ascii_lowercase());
+            let is_exact = font_match.get_families().contains(&family.to_ascii_lowercase());
 
             if !is_exact {
                 return Ok(None);
             }
 
-            let path = file_in_pattern(&font_match)?;
+            let path = font_match.get_file()?;
 
             Ok(Some(path))
         }
@@ -90,7 +90,6 @@ pub struct FontconfigLoader {
 impl FontconfigLoader {
     pub fn new() -> Result<Self> {
         let _tmpdir = tempdir()?;
-        #[allow(clippy::expect_used, reason = "explicit panic")]
         let link = dirs::font_dir().expect("Fonts directory does not exist").join(".fntldrtmp");
 
         if link.is_symlink() {
@@ -117,7 +116,6 @@ impl LoadFontFiles for FontconfigLoader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let file = file.as_ref();
-            #[allow(clippy::unwrap_used, reason = "explicit panic as caller fault")]
             let target = self.link.join(file.file_name().unwrap());
             symlink(file, &target).with_context(|| {
                 format!("Error linking from \"{}\" to \"{}\"", file.display(), target.display())
@@ -145,57 +143,59 @@ impl LoadFontFiles for FontconfigLoader {
     }
 }
 
-struct FcPatternPtr(*mut FcPattern);
+struct Pattern(*mut FcPattern);
 
-impl Drop for FcPatternPtr {
+impl Pattern {
+    fn get_file(&self) -> Result<PathBuf> {
+        let mut match_res_ptr = ptr::null_mut();
+
+        let result = unsafe { FcPatternGetString(self.0, FC_FILE.as_ptr(), 0, &mut match_res_ptr) };
+
+        ensure!(
+            result == FcResultMatch,
+            "FcPatternGetString failed, no such field \"file\" in pattern"
+        );
+
+        ensure!(!match_res_ptr.is_null(), "FcPatternGetString returned null pointer");
+
+        let path = unsafe { CStr::from_ptr(match_res_ptr as *const i8) };
+        let path = OsStr::from_bytes(path.to_bytes());
+        let path = Path::new(path).to_owned();
+
+        Ok(path)
+    }
+
+    fn get_families(&self) -> Vec<String> {
+        let mut families = Vec::new();
+
+        for i in 0.. {
+            let mut match_res_ptr = ptr::null_mut();
+
+            if unsafe { FcPatternGetString(self.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) }
+                != FcResultMatch
+            {
+                break;
+            }
+
+            if match_res_ptr.is_null() {
+                continue;
+            }
+
+            let name = unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
+                .to_string_lossy()
+                .to_ascii_lowercase();
+
+            families.push(name);
+        }
+
+        families
+    }
+}
+
+impl Drop for Pattern {
     fn drop(&mut self) {
         unsafe {
             FcPatternDestroy(self.0);
         }
     }
-}
-
-unsafe fn file_in_pattern(pattern: &FcPatternPtr) -> Result<PathBuf> {
-    let mut match_res_ptr = ptr::null_mut();
-
-    let result = unsafe { FcPatternGetString(pattern.0, FC_FILE.as_ptr(), 0, &mut match_res_ptr) };
-
-    ensure!(
-        result == FcResultMatch,
-        "FcPatternGetString failed, no such field \"file\" in pattern"
-    );
-
-    ensure!(!match_res_ptr.is_null(), "FcPatternGetString returned null pointer");
-
-    let path = unsafe { CStr::from_ptr(match_res_ptr as *const i8) };
-    let path = OsStr::from_bytes(path.to_bytes());
-    let path = Path::new(path).to_owned();
-
-    Ok(path)
-}
-
-unsafe fn families_in_pattern(pattern: &FcPatternPtr) -> Vec<String> {
-    let mut families = Vec::new();
-
-    for i in 0.. {
-        let mut match_res_ptr = ptr::null_mut();
-        let result =
-            unsafe { FcPatternGetString(pattern.0, FC_FAMILY.as_ptr(), i, &mut match_res_ptr) };
-
-        if result != FcResultMatch {
-            break;
-        }
-
-        if match_res_ptr.is_null() {
-            continue;
-        }
-
-        let name = unsafe { CStr::from_ptr(match_res_ptr as *const i8) }
-            .to_string_lossy()
-            .to_ascii_lowercase();
-
-        families.push(name);
-    }
-
-    families
 }

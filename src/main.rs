@@ -14,7 +14,6 @@ fn tldr() -> ! {
 
 fn main() {
     // `current_exe` follows symlink on linux
-    #[allow(clippy::unwrap_used, reason = "should not fail")]
     let program_name = std::env::current_exe()
         .unwrap()
         .file_name()
