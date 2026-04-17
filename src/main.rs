@@ -4,23 +4,19 @@ mod ssa;
 mod system;
 mod utils;
 
+use std::path::PathBuf;
+
 use crate::app::*;
 
 fn tldr() -> ! {
-    println!("Made with curiosity by OV");
-    println!("Thank you for supporting");
+    eprintln!("Made with curiosity by OV");
+    eprintln!("Thank you for supporting!");
     std::process::exit(0);
 }
 
 fn main() {
-    // `current_exe` follows symlink on linux
-    let program_name = std::env::current_exe()
-        .unwrap()
-        .file_name()
-        .unwrap()
-        .to_string_lossy()
-        .to_ascii_lowercase();
-    let program_name = program_name.strip_suffix(".exe").unwrap_or(&program_name);
+    let invocation_name = PathBuf::from(std::env::args().next().unwrap());
+    let program_name = invocation_name.file_stem().and_then(|s| s.to_str()).unwrap_or("");
 
     let result = match program_name {
         "friedegg" => tldr(),

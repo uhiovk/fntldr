@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{ArgAction, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
 // default mode
 
@@ -16,90 +16,74 @@ pub struct Cli {
 pub enum Commands {
     /// Load font files
     Load {
-        /// Directories to be scanned
-        #[arg(short, long = "dir", value_name = "DIRECTORY")]
-        direct_dirs: Vec<PathBuf>,
+        /// Font files or directories containing them
+        source: Vec<PathBuf>,
 
-        /// Directories to be recursively scanned
+        /// Recursively scan these directories
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
-
-        /// Font files
-        #[arg(value_name = "FONT_FILE")]
-        files: Vec<PathBuf>,
     },
 
     /// Load used fonts in (A)SSA subtitles
     LoadBy {
-        /// Directories to be scanned
-        #[arg(short, long = "dir", value_name = "DIRECTORY")]
-        direct_dirs: Vec<PathBuf>,
+        /// Subtitle files or directories containing them
+        source: Vec<PathBuf>,
 
-        /// Directories to be recursively scanned
+        /// Recursively scan these directories
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
-        /// Manually specify cache file
-        #[arg(short, long)]
-        cache: Option<PathBuf>,
+        /// Specify database file
+        #[arg(short, long = "db")]
+        db_path: Option<PathBuf>,
 
         /// Load fonts listed in ./fonts.txt
-        #[arg(short = 'l', long = "font-list")]
-        load_font_list: bool,
+        #[arg(short, long)]
+        list: bool,
     },
 
     /// Build index cache
     Index {
-        /// Directories to be scanned
-        #[arg(short, long = "dir", value_name = "DIRECTORY")]
-        direct_dirs: Vec<PathBuf>,
+        /// Font files or directories containing them
+        source: Vec<PathBuf>,
 
-        /// Directories to be recursively scanned
+        /// Recursively scan these directories
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
-        /// Manually specify cache file to save to
-        #[arg(short, long)]
-        cache: Option<PathBuf>,
+        /// Specify database file
+        #[arg(short, long = "db")]
+        db_path: Option<PathBuf>,
 
-        /// Avoid translate saved paths to absolute
-        #[arg(short = 'p', long = "portable", action = ArgAction::SetFalse)]
-        is_absolute: bool,
+        /// Do not translate paths to absolute
+        #[arg(short = 'p', long = "portable")]
+        portable: bool,
 
-        /// Clear the cache and rebuild it fresh
+        /// Reset and rebuild the database
         #[arg(short = 'b', long)]
-        rebuild: bool,
+        reset: bool,
     },
 
     /// List used fonts in (A)SSA subtitles
     List {
-        /// Directories to be scanned
-        #[arg(short, long = "dir", value_name = "DIRECTORY")]
-        direct_dirs: Vec<PathBuf>,
+        /// Subtitle files or directories containing them
+        source: Vec<PathBuf>,
 
-        /// Directories to be recursively scanned
+        /// Recursively scan these directories
         #[arg(short, long = "recurse", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
 
-        /// Mark fonts listed in cache as installed,
-        /// use default cache if not specified
-        #[arg(short, long)]
-        cache: Option<Option<PathBuf>>,
+        /// Treat fonts in database as installed
+        #[arg(short, long = "db")]
+        db_path: Option<Option<PathBuf>>,
 
         /// Export font list to ./fonts.txt
-        #[arg(short = 'l', long = "font-list")]
+        #[arg(short = 'l', long = "list")]
         export_font_list: bool,
 
-        /// Export installed fonts
+        /// Copy installed fonts to specified directory
         #[arg(short = 'x', long = "export", value_name = "TARGET")]
-        export_fonts_path: Option<PathBuf>,
-    },
-
-    /// Delete font index cache file
-    Clear {
-        /// Manually specify cache file
-        #[arg(short, long)]
-        cache: Option<PathBuf>,
+        export_font_files: Option<PathBuf>,
     },
 }
 

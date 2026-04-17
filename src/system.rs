@@ -8,61 +8,49 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
+pub trait FindFont {
+    fn get_font_file(&self, name: &str) -> Result<Option<PathBuf>>;
+}
+
+pub trait LoadFont {
+    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()>;
+}
+
 #[cfg(target_os = "linux")]
-type FinderImpl = self::linux::FontconfigFinder;
-
+use self::linux::{FontconfigFinder as SysFinder, FontconfigLoader as SysLoader};
 #[cfg(target_os = "windows")]
-type FinderImpl = self::windows::Finder;
+use self::windows::{Finder as SysFinder, Loader as SysLoader};
 
-pub struct Finder(FinderImpl);
+pub struct Finder(SysFinder);
 
 impl Finder {
     pub fn new() -> Result<Self> {
-        #[cfg(target_os = "linux")]
-        return Ok(Self(self::linux::FontconfigFinder));
-
-        #[cfg(target_os = "windows")]
-        return Ok(Self(self::windows::Finder));
+        Ok(Self(SysFinder))
     }
+}
 
-    pub fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>> {
+impl FindFont for Finder {
+    fn get_font_file(&self, name: &str) -> Result<Option<PathBuf>> {
         self.0.get_font_file(name)
     }
 }
 
-#[cfg(target_os = "linux")]
-type LoaderImpl = self::linux::FontconfigLoader;
-
-#[cfg(target_os = "windows")]
-type LoaderImpl = self::windows::Loader;
-
-pub struct Loader(Option<LoaderImpl>);
+pub struct Loader(SysLoader);
 
 impl Loader {
+    #[cfg(target_os = "linux")]
     pub fn new() -> Result<Self> {
-        #[cfg(target_os = "linux")]
-        return Ok(Self(Some(self::linux::FontconfigLoader::new()?)));
-
-        #[cfg(target_os = "windows")]
-        return Ok(Self(Some(self::windows::Loader::new())));
+        Ok(Self(SysLoader::new()?))
     }
 
-    pub fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
-        self.0.as_mut().unwrap().load(files)
+    #[cfg(target_os = "windows")]
+    pub fn new() -> Result<Self> {
+        Ok(Self(SysLoader::new()))
     }
 }
 
-impl Drop for Loader {
-    fn drop(&mut self) {
-        self.0.take().unwrap().unload_all();
+impl LoadFont for Loader {
+    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
+        self.0.load(files)
     }
-}
-
-trait FindFont {
-    fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>>;
-}
-
-trait LoadFontFiles {
-    fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()>;
-    fn unload_all(self);
 }

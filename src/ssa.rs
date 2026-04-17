@@ -23,7 +23,7 @@ impl SsaFonts {
         Self { fonts: HashSet::new() }
     }
 
-    pub fn inner(&self) -> &HashSet<String> {
+    pub fn as_inner(&self) -> &HashSet<String> {
         &self.fonts
     }
 
@@ -46,10 +46,13 @@ impl SsaFonts {
         Ok(())
     }
 
-    pub fn index(&mut self, path: &Path, is_recursive: bool) {
-        let mut process = |path: PathBuf| self.fonts.extend(get_ssa_fonts(&path));
+    pub fn add_file(&mut self, path: &Path) {
+        self.fonts.extend(extract_ssa_fonts(path))
+    }
 
-        walk_dir(path, is_recursive, &is_ssa, &mut process)
+    pub fn scan_dir(&mut self, path: &Path, is_recursive: bool) {
+        let mut callback = |path: PathBuf| self.fonts.extend(extract_ssa_fonts(&path));
+        walk_dir(path, is_recursive, &is_ssa, &mut callback)
     }
 
     pub fn sorted(&self) -> Vec<String> {
@@ -78,7 +81,7 @@ impl FromStr for SsaFonts {
     }
 }
 
-fn get_ssa_fonts(path: &Path) -> HashSet<String> {
+fn extract_ssa_fonts(path: &Path) -> HashSet<String> {
     // in SSA, "{\fnFont Name}" specifies a font override for following text
     // multiple style overrides may be specified in a single pair of "{}"
     // we only match the last specified font name in each "{}" as it would override previous ones

@@ -1,62 +1,55 @@
 mod cli;
 mod functions;
 
-use std::path::PathBuf;
-
 use anyhow::Result;
 use clap::Parser;
 
 use self::cli::*;
 use self::functions::*;
-use crate::utils::get_cache_path;
+use crate::utils::get_db_path;
 
 pub fn app() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Load { direct_dirs, recursive_dirs, files } => {
-            load(direct_dirs, recursive_dirs, files)
+        Commands::Load { source, recursive_dirs } => load(source, recursive_dirs),
+
+        Commands::LoadBy { source, recursive_dirs, db_path, list } => {
+            load_by(source, recursive_dirs, db_path, list)
+        }
+        Commands::Index { source, recursive_dirs, db_path, portable, reset } => {
+            index(source, recursive_dirs, db_path, portable, reset)
         }
 
-        Commands::LoadBy { direct_dirs, recursive_dirs, cache, load_font_list } => {
-            load_by(direct_dirs, recursive_dirs, cache, load_font_list)
+        Commands::List { source, recursive_dirs, db_path, export_font_list, export_font_files } => {
+            list(source, recursive_dirs, db_path, export_font_list, export_font_files)
         }
-
-        Commands::Index { direct_dirs, recursive_dirs, cache, is_absolute, rebuild } => {
-            index(direct_dirs, recursive_dirs, cache, is_absolute, rebuild)
-        }
-
-        Commands::List {
-            direct_dirs,
-            recursive_dirs,
-            cache,
-            export_font_list,
-            export_fonts_path,
-        } => list(direct_dirs, recursive_dirs, cache, export_font_list, export_fonts_path),
-
-        Commands::Clear { cache } => clear(cache),
     }
 }
 
 pub fn fontloader_app() -> Result<()> {
-    let cli = FontLoaderCli::parse();
-    let direct_dirs = if cli.files.is_empty() { vec![PathBuf::from(".")] } else { vec![] };
-    load(direct_dirs, vec![], cli.files)
+    let mut cli = FontLoaderCli::parse();
+
+    if cli.files.is_empty() {
+        cli.files.push(".".into());
+    };
+
+    load(cli.files, vec![])
 }
 
 pub fn fontloadersub_app() -> Result<()> {
     let cli = FontLoaderSubCli::parse();
-    if !get_cache_path(Some(&PathBuf::from("."))).is_file() {
-        eprintln!("Cache not found, building...");
-        index(vec![], vec![PathBuf::from(".")], Some(PathBuf::from(".")), false, false)?;
+    if !get_db_path(Some(".".as_ref())).is_file() {
+        eprintln!("Database not found, start building...");
+        index(vec![], vec![".".into()], Some(".".into()), false, true)?;
     }
-    load_by(vec![], cli.dirs, Some(PathBuf::from(".")), false)
+    load_by(vec![], cli.dirs, Some(".".into()), false)
 }
 
 pub fn listassfonts_app() -> Result<()> {
     let cli = ListAssFontsCli::parse();
     list(vec![], cli.dirs, None, false, None)?;
-    println!("Press enter to exit");
+    eprintln!("Press enter to exit");
     let _ = std::io::stdin().read_line(&mut String::new());
     Ok(())
 }

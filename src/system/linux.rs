@@ -14,7 +14,7 @@ use fontconfig_sys::{
 };
 use tempfile::{TempDir, tempdir};
 
-use super::{FindFont, LoadFontFiles};
+use super::{FindFont, LoadFont};
 use crate::utils::parse_style;
 
 pub struct FontconfigFinder;
@@ -29,14 +29,14 @@ pub struct FontconfigFinder;
 // For example, you'd probably expect `true` for "sans-serif" or "monospace",
 // but it'll return the opposite, since no actual font would have the name.
 impl FindFont for FontconfigFinder {
-    fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>> {
-        let (family, style) = parse_style(name.as_ref());
+    fn get_font_file(&self, name: &str) -> Result<Option<PathBuf>> {
+        let (family, style) = parse_style(name);
 
         unsafe {
             // create the pattern
             let pattern = Pattern(FcPatternCreate());
 
-            ensure!(!pattern.0.is_null(), "FcPatternCreate returned null pointer");
+            ensure!(!pattern.0.is_null(), "FcPatternCreate failed");
 
             // add family name and style to the pattern
             if FcPatternAddString(
@@ -66,7 +66,7 @@ impl FindFont for FontconfigFinder {
             // match the pattern, basically equivalent to `fc-match`
             let font_match = Pattern(FcFontMatch(ptr::null_mut(), pattern.0, &mut 0));
 
-            ensure!(!font_match.0.is_null(), "FcFontMatch returned null pointer");
+            ensure!(!font_match.0.is_null(), "FcFontMatch failed");
 
             // check all family names of the returned best match
             let is_exact = font_match.get_families().contains(&family.to_ascii_lowercase());
@@ -90,7 +90,7 @@ pub struct FontconfigLoader {
 impl FontconfigLoader {
     pub fn new() -> Result<Self> {
         let _tmpdir = tempdir()?;
-        let link = dirs::font_dir().expect("Fonts directory does not exist").join(".fntldrtmp");
+        let link = dirs::font_dir().unwrap().join(".fntldrtmp");
 
         if link.is_symlink() {
             if link.is_dir() {
@@ -99,26 +99,26 @@ impl FontconfigLoader {
             } else {
                 // link is broken
                 remove_file(&link).with_context(|| {
-                    format!("Error removing broken symlink \"{}\"", link.display())
+                    format!("cannot remove broken symlink \"{}\"", link.display())
                 })?;
             }
         }
 
         symlink(_tmpdir.path(), &link).with_context(|| {
-            format!("Error linking from \"{}\" to \"{}\"", _tmpdir.path().display(), link.display())
+            format!("cannot link from \"{}\" to \"{}\"", _tmpdir.path().display(), link.display())
         })?;
 
         Ok(Self { _tmpdir, link })
     }
 }
 
-impl LoadFontFiles for FontconfigLoader {
+impl LoadFont for FontconfigLoader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let file = file.as_ref();
             let target = self.link.join(file.file_name().unwrap());
             symlink(file, &target).with_context(|| {
-                format!("Error linking from \"{}\" to \"{}\"", file.display(), target.display())
+                format!("cannot link from \"{}\" to \"{}\"", file.display(), target.display())
             })?;
         }
 
@@ -133,11 +133,11 @@ impl LoadFontFiles for FontconfigLoader {
 
     fn unload_all(self) {
         if remove_dir_all(&self.link).is_err() {
-            eprintln!("Error removing symlink \"{}\"", self.link.display());
+            eprintln!("cannot remove symlink \"{}\"", self.link.display());
         }
 
         if unsafe { FcConfigBuildFonts(ptr::null_mut()) } == 0 {
-            eprintln!("Fontconfig cache reloading failed");
+            eprintln!("FcConfigBuildFonts failed");
             eprintln!("Please run `fc-cache` yourself");
         }
     }
@@ -148,15 +148,10 @@ struct Pattern(*mut FcPattern);
 impl Pattern {
     fn get_file(&self) -> Result<PathBuf> {
         let mut match_res_ptr = ptr::null_mut();
-
         let result = unsafe { FcPatternGetString(self.0, FC_FILE.as_ptr(), 0, &mut match_res_ptr) };
 
-        ensure!(
-            result == FcResultMatch,
-            "FcPatternGetString failed, no such field \"file\" in pattern"
-        );
-
-        ensure!(!match_res_ptr.is_null(), "FcPatternGetString returned null pointer");
+        ensure!(result == FcResultMatch, "FcPatternGetString failed");
+        ensure!(!match_res_ptr.is_null(), "FcPatternGetString failed");
 
         let path = unsafe { CStr::from_ptr(match_res_ptr as *const i8) };
         let path = OsStr::from_bytes(path.to_bytes());

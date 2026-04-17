@@ -8,13 +8,13 @@ use windows_sys::Win32::Graphics::Gdi::{
     TEXTMETRICW,
 };
 
-use crate::system::{FindFont, LoadFontFiles};
+use crate::system::{FindFont, LoadFont};
 use crate::utils::parse_style;
 
 pub struct Finder;
 
 impl FindFont for Finder {
-    fn get_font_file(&self, name: impl AsRef<str>) -> Result<Option<PathBuf>> {
+    fn get_font_file(&self, name: &str) -> Result<Option<PathBuf>> {
         unsafe extern "system" fn callback(
             _logfont: *const LOGFONTW,
             _metrics: *const TEXTMETRICW,
@@ -27,7 +27,7 @@ impl FindFont for Finder {
             0
         }
 
-        let (family, style) = parse_style(name.as_ref());
+        let (family, style) = parse_style(name);
         let face_name =
             if style == "Regular" { family.to_owned() } else { family.to_owned() + " " + style };
         let mut name_utf16 = face_name.encode_utf16();
@@ -64,23 +64,25 @@ impl Loader {
     }
 }
 
-impl LoadFontFiles for Loader {
+impl LoadFont for Loader {
     fn load(&mut self, files: impl IntoIterator<Item = impl AsRef<Path>>) -> Result<()> {
         for file in files {
             let path_utf16: Vec<_> = file.as_ref().as_os_str().encode_wide().chain([0]).collect();
             if unsafe { AddFontResourceW(path_utf16.as_ptr()) } == 0 {
-                bail!("AddFontResource failed");
+                bail!("cannot load file: {}", String::from_utf16_lossy(&path_utf16));
             }
             self.loaded.push(path_utf16);
         }
 
         Ok(())
     }
+}
 
-    fn unload_all(self) {
+impl Drop for Loader {
+    fn drop(&mut self) {
         for path_utf16 in &self.loaded {
             if unsafe { RemoveFontResourceW(path_utf16.as_ptr()) } == 0 {
-                eprintln!("Failed to unregister file: {}", String::from_utf16_lossy(path_utf16));
+                eprintln!("cannot unload file: {}", String::from_utf16_lossy(path_utf16));
             }
         }
     }

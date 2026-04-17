@@ -1,88 +1,83 @@
 use std::collections::HashSet;
-use std::fs::{copy, remove_file};
-use std::io::{Write, stdin, stdout};
+use std::fs::copy;
 use std::path::PathBuf;
 
 use anyhow::Result;
 
 use crate::font::FontProviders;
 use crate::ssa::SsaFonts;
-use crate::system::{Finder, Loader};
-use crate::utils::{
-    get_cache_path, get_cache_path_fallback, get_font_list_path, is_font, walk_dir,
-};
+use crate::system::{FindFont, Finder, LoadFont, Loader};
+use crate::utils::{get_db_path, is_font, walk_dir};
 
-pub fn load(
-    direct_dirs: Vec<PathBuf>,
-    recursive_dirs: Vec<PathBuf>,
-    files: Vec<PathBuf>,
-) -> Result<()> {
+pub fn load(source: Vec<PathBuf>, recursive_dirs: Vec<PathBuf>) -> Result<()> {
     let mut all_files = Vec::new();
 
-    for dir in direct_dirs {
-        walk_dir(&dir, false, &is_font, &mut |path| all_files.push(path));
+    for path in source {
+        if path.is_dir() {
+            walk_dir(&path, false, &is_font, &mut |path| all_files.push(path));
+        } else {
+            all_files.push(path);
+        }
     }
 
     for dir in recursive_dirs {
         walk_dir(&dir, true, &is_font, &mut |path| all_files.push(path));
     }
 
-    all_files.extend(files.into_iter().filter(|file| is_font(file)));
-
     if all_files.is_empty() {
-        println!("Nothing to load");
+        eprintln!("Nothing to load");
         return Ok(());
     }
 
     let mut loader = Loader::new()?;
-
     loader.load(&all_files)?;
 
-    println!("Loaded {} files", all_files.len());
+    eprintln!("Successfully loaded {} files", all_files.len());
     wait();
 
     Ok(())
 }
 
 pub fn load_by(
-    direct_dirs: Vec<PathBuf>,
+    source: Vec<PathBuf>,
     recursive_dirs: Vec<PathBuf>,
-    cache_path: Option<PathBuf>,
+    db_path: Option<PathBuf>,
     load_font_list: bool,
 ) -> Result<()> {
-    let cache = FontProviders::load(&get_cache_path_fallback(cache_path.as_deref()))?;
-
     let mut ssa_fonts = if load_font_list {
-        SsaFonts::load(&get_font_list_path(None)).unwrap_or_else(|_| {
-            eprintln!("Cannot load \"fonts.txt\", ignoring");
+        SsaFonts::load("fonts.txt".as_ref()).unwrap_or_else(|_| {
+            eprintln!("Cannot read \"fonts.txt\", ignoring");
             SsaFonts::new()
         })
     } else {
         SsaFonts::new()
     };
 
-    for dir in direct_dirs {
-        ssa_fonts.index(&dir, false);
+    for path in source {
+        if path.is_dir() {
+            ssa_fonts.scan_dir(&path, false);
+        } else {
+            ssa_fonts.add_file(&path);
+        }
     }
 
     for dir in recursive_dirs {
-        ssa_fonts.index(&dir, true);
+        ssa_fonts.scan_dir(&dir, true);
     }
 
-    if ssa_fonts.inner().is_empty() {
-        println!("Nothing to load");
+    if ssa_fonts.as_inner().is_empty() {
+        eprintln!("Nothing to load");
         return Ok(());
     }
 
     let finder = Finder::new()?;
-    let mut loader = Loader::new()?;
-
+    let db = FontProviders::load(&get_db_path(db_path.as_deref()))?;
     let (names, files): (Vec<_>, HashSet<_>) = ssa_fonts
         .sorted()
         .into_iter()
-        .filter(|name| get_installed_file(name, &finder).is_none())
+        .filter(|name| matches!(finder.get_font_file(name), Ok(None)))
         .filter_map(|name| {
-            let opt = cache.file_by_font_name(&name);
+            let opt = db.get_file(&name);
             if opt.is_none() {
                 eprintln!("Font \"{}\" missing in index", name);
             }
@@ -91,88 +86,89 @@ pub fn load_by(
         .unzip();
 
     if files.is_empty() {
-        println!("Nothing to load");
+        eprintln!("Nothing to load");
         return Ok(());
     }
 
+    let mut loader = Loader::new()?;
     loader.load(files)?;
 
-    println!("\nLoaded fonts:\n");
-    println!("{}", names.join("\n"));
+    eprintln!("\nLoaded fonts:\n");
+    for name in names {
+        eprintln!("{name}");
+    }
     wait();
 
     Ok(())
 }
 
 pub fn index(
-    direct_dirs: Vec<PathBuf>,
+    source: Vec<PathBuf>,
     recursive_dirs: Vec<PathBuf>,
-    cache_path: Option<PathBuf>,
-    is_absolute: bool,
-    rebuild: bool,
+    db_path: Option<PathBuf>,
+    portable: bool,
+    reset: bool,
 ) -> Result<()> {
-    let (cache_is_specified, cache_path) =
-        (cache_path.is_some(), get_cache_path(cache_path.as_deref()));
+    let (cache_is_specified, db_path) = (db_path.is_some(), get_db_path(db_path.as_deref()));
 
-    let mut cache = if !rebuild && cache_is_specified && cache_path.is_file() {
-        println!("Loading cache from \"{}\"", cache_path.display());
-        FontProviders::load(&cache_path)?
+    let mut db = if !reset && cache_is_specified && db_path.is_file() {
+        FontProviders::load(&db_path)?
     } else {
-        println!("Creating new cache");
         FontProviders::new()
     };
 
-    for dir in direct_dirs {
-        cache.index(&dir, false);
+    for path in source {
+        if path.is_dir() {
+            db.scan_dir(&path, false);
+        } else {
+            db.add_file(path);
+        }
     }
 
     for dir in recursive_dirs {
-        cache.index(&dir, true);
+        db.scan_dir(&dir, true);
     }
 
-    if is_absolute {
-        cache.make_absolute()?;
+    if !portable {
+        db.make_absolute()?;
     }
 
-    cache.save(&cache_path)?;
-    println!("Saved cache to \"{}\"", cache_path.display());
+    db.save(&db_path)?;
 
     Ok(())
 }
 
 pub fn list(
-    direct_dirs: Vec<PathBuf>,
+    source: Vec<PathBuf>,
     recursive_dirs: Vec<PathBuf>,
-    cache_path: Option<Option<PathBuf>>,
+    db_path: Option<Option<PathBuf>>,
     export_font_list: bool,
-    export_fonts_path: Option<PathBuf>,
+    export_font_files: Option<PathBuf>,
 ) -> Result<()> {
     const INSTALLED_INDICATOR: &str = "*";
     const IN_INDEX_INDICATOR: &str = "-";
     const NOT_INSTALLED_INDICATOR: &str = " ";
 
     #[cfg(target_os = "windows")]
-    if export_fonts_path.is_some() {
+    if export_font_files.is_some() {
         unimplemented!("Exporting fonts on Windows is not yet implemeted");
     }
 
     let mut ssa_fonts = SsaFonts::new();
 
-    for dir in direct_dirs {
-        ssa_fonts.index(&dir, false);
+    for path in source {
+        if path.is_file() {
+            ssa_fonts.add_file(&path);
+        } else {
+            ssa_fonts.scan_dir(&path, false);
+        }
     }
 
     for dir in recursive_dirs {
-        ssa_fonts.index(&dir, true);
+        ssa_fonts.scan_dir(&dir, true);
     }
 
-    let finder = Finder::new()?;
-    let cache = match &cache_path {
-        Some(path_opt) => FontProviders::load(&get_cache_path(path_opt.as_deref()))?,
-        None => FontProviders::new(),
-    };
-
-    let export_fonts_path = export_fonts_path.and_then(|path| {
+    let export_font_path = export_font_files.and_then(|path| {
         if path.is_dir() {
             Some(path)
         } else {
@@ -181,32 +177,40 @@ pub fn list(
         }
     });
 
-    if cache_path.is_some() {
-        println!(
+    if db_path.is_some() {
+        eprintln!(
             "{} for installed, {} for indexed in cache\n",
             INSTALLED_INDICATOR, IN_INDEX_INDICATOR
         );
     }
 
+    let db = match &db_path {
+        Some(path_opt) => Some(FontProviders::load(&get_db_path(path_opt.as_deref()))?),
+        None => None,
+    };
+
+    let finder = Finder::new()?;
     for name in ssa_fonts.sorted() {
-        let file = if let Some(path) = get_installed_file(&name, &finder) {
-            println!("[{}] {}", INSTALLED_INDICATOR, name);
+        let file = if let Some(path) = finder.get_font_file(&name)? {
+            eprintln!("[{}] {}", INSTALLED_INDICATOR, name);
             Some(path)
-        } else if let Some(path) = cache.file_by_font_name(&name) {
-            println!("[{}] {}", IN_INDEX_INDICATOR, name);
+        } else if let Some(db) = &db
+            && let Some(path) = db.get_file(&name)
+        {
+            eprintln!("[{}] {}", IN_INDEX_INDICATOR, name);
             Some(path.to_owned())
         } else {
-            println!("[{}] {}", NOT_INSTALLED_INDICATOR, name);
+            eprintln!("[{}] {}", NOT_INSTALLED_INDICATOR, name);
             None
         };
 
-        if let Some(export_path) = &export_fonts_path
+        if let Some(export_path) = &export_font_path
             && let Some(file) = file
         {
             let filename = file.file_name().unwrap();
             if copy(&file, export_path.join(filename)).is_err() {
                 eprintln!(
-                    "Error copying from \"{}\" to \"{}\"",
+                    "Cannot copy from \"{}\" to \"{}\"",
                     file.display(),
                     export_path.display()
                 )
@@ -215,39 +219,11 @@ pub fn list(
     }
 
     if export_font_list {
-        ssa_fonts.save(&get_font_list_path(None))?;
-        println!("Exported font list to \"./fonts.txt\"");
+        ssa_fonts.save("fonts.txt".as_ref())?;
+        eprintln!("Exported font list to \"./fonts.txt\"");
     }
 
     Ok(())
-}
-
-pub fn clear(cache_path: Option<PathBuf>) -> Result<()> {
-    let cache_path = get_cache_path(cache_path.as_deref());
-
-    println!("Are you sure to remove this file? {}", cache_path.display());
-    print!("(y/N): ");
-    stdout().flush()?;
-
-    let mut answer = String::new();
-    stdin().read_line(&mut answer)?;
-    let answer = answer.trim_ascii_end();
-    if !(answer == "y" || answer == "Y") {
-        println!("User aborted operation");
-        return Ok(());
-    }
-
-    remove_file(cache_path)?;
-    println!("File removed successfully");
-
-    Ok(())
-}
-
-fn get_installed_file(name: &str, finder: &Finder) -> Option<PathBuf> {
-    finder.get_font_file(name).unwrap_or_else(|_| {
-        eprintln!("Error checking installation state of \"{}\", treating as not installed", name);
-        None
-    })
 }
 
 fn wait() {
@@ -258,6 +234,6 @@ fn wait() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    println!("\nPress Ctrl+C or close the window to unload fonts...");
+    eprintln!("\nPress Ctrl+C to unload fonts...");
     let _ = rx.recv();
 }

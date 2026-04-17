@@ -7,7 +7,7 @@ pub fn walk_dir(
     path: &Path,
     is_recursive: bool,
     may_process: &impl Fn(&Path) -> bool,
-    process: &mut impl FnMut(PathBuf),
+    callback: &mut impl FnMut(PathBuf),
 ) {
     // report and ignore errors
     let Ok(entries) = read_dir(path) else {
@@ -22,54 +22,25 @@ pub fn walk_dir(
         };
 
         let path = entry.path();
-
         if may_process(&path) {
-            process(path);
+            callback(path);
         } else if is_recursive && path.is_dir() {
-            walk_dir(&path, true, may_process, process);
+            walk_dir(&path, true, may_process, callback);
         }
     }
 }
 
-pub fn get_cache_path(path: Option<&Path>) -> PathBuf {
-    const CACHE_DIR_NAME: &str = "fntldr";
-    const CACHE_FILENAME: &str = "fntldr_cache.bin";
-
-    let Some(path) = path else {
-        // not specified, use default cache directory
-        return dirs::cache_dir()
-            .expect("Cache directory does not exist")
-            .join(CACHE_DIR_NAME)
-            .join(CACHE_FILENAME);
-    };
-
-    if path.is_file() {
-        // input already points to a file
-        path.to_owned()
+pub fn get_db_path(path: Option<&Path>) -> PathBuf {
+    if let Some(path) = path {
+        if path.is_file() { path.to_owned() } else { path.join("fntldr.bin") }
     } else {
-        // assume input points to a directory
-        path.join(CACHE_FILENAME)
-    }
-}
-
-pub fn get_cache_path_fallback(path: Option<&Path>) -> PathBuf {
-    match path {
-        Some(path) => get_cache_path(Some(path)),
-        None => {
-            let current_dir_cache = get_cache_path(Some(&PathBuf::from(".")));
-            if current_dir_cache.is_file() { current_dir_cache } else { get_cache_path(None) }
+        let current_dir_db = PathBuf::from("./fntldr.bin");
+        if current_dir_db.is_file() {
+            current_dir_db
+        } else {
+            dirs::cache_dir().unwrap().join("fntldr/fntldr.bin")
         }
     }
-}
-
-pub fn get_font_list_path(path: Option<&Path>) -> PathBuf {
-    const DEFAULT_LOCATION: &str = "./fonts.txt";
-
-    if path.is_some() {
-        unimplemented!();
-    }
-
-    PathBuf::from(DEFAULT_LOCATION)
 }
 
 pub fn parse_style(name: &str) -> (&str, &str) {
@@ -119,6 +90,5 @@ fn ext_endswith(path: &Path, extensions: &[impl AsRef<str>]) -> bool {
     };
 
     let ext = ext.to_ascii_lowercase();
-
     extensions.iter().any(|tgt| ext == tgt.as_ref())
 }
