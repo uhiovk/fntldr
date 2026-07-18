@@ -1,5 +1,5 @@
 use std::ffi::{CStr, CString, OsStr};
-use std::fs::{remove_dir_all, remove_file};
+use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
@@ -55,6 +55,9 @@ impl FontconfigLoader {
     pub fn new() -> Result<Self> {
         let _tmpdir = tempdir()?;
         let link = dirs::font_dir().unwrap().join(".fntldrtmp");
+        if !link.parent().unwrap().exists() {
+            create_dir_all(link.parent().unwrap())?;
+        }
 
         if link.is_symlink() {
             if link.is_dir() {
@@ -114,9 +117,8 @@ impl Pattern {
     }
 
     fn add_string(&mut self, key: &CStr, value: &CStr) {
-        assert_eq!(
-            unsafe { FcPatternAddString(self.0.as_ptr(), key.as_ptr(), value.as_ptr() as _) },
-            0
+        assert!(
+            unsafe { FcPatternAddString(self.0.as_ptr(), key.as_ptr(), value.as_ptr() as _) } != 0
         );
     }
 
@@ -127,13 +129,13 @@ impl Pattern {
     }
 
     fn config_sub(&mut self, match_kind: u32) {
-        assert_eq!(unsafe { FcConfigSubstitute(ptr::null_mut(), self.0.as_ptr(), match_kind) }, 0)
+        assert!(unsafe { FcConfigSubstitute(ptr::null_mut(), self.0.as_ptr(), match_kind) } != 0)
     }
 
     fn match_font(&self) -> Self {
         let mut result = 0;
         let ptr = unsafe { FcFontMatch(ptr::null_mut(), self.0.as_ptr(), &mut result) };
-        assert_eq!(result, 0);
+        assert!(result == FcResultMatch);
         Self::new_from(ptr).unwrap()
     }
 
@@ -145,8 +147,8 @@ impl Pattern {
             return None;
         }
 
-        let path = unsafe { CString::from_raw(match_res_ptr as _) };
-        Some(OsStr::from_bytes(path.as_bytes()).to_owned().into())
+        let path = unsafe { CStr::from_ptr(match_res_ptr as _) };
+        Some(OsStr::from_bytes(path.to_bytes()).to_owned().into())
     }
 
     fn has_family(&self, family: &str) -> bool {
@@ -163,7 +165,7 @@ impl Pattern {
                 continue;
             }
 
-            let name = unsafe { CString::from_raw(match_res_ptr as _) }
+            let name = unsafe { CStr::from_ptr(match_res_ptr as _) }
                 .to_string_lossy()
                 .to_ascii_lowercase();
             if name == family {
