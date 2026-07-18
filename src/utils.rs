@@ -9,18 +9,9 @@ pub fn walk_dir(
     may_process: &impl Fn(&Path) -> bool,
     callback: &mut impl FnMut(PathBuf),
 ) {
-    // report and ignore errors
-    let Ok(entries) = read_dir(path) else {
-        eprintln!("Error reading directory \"{}\"", path.display());
-        return;
-    };
-
-    for entry in entries {
-        let Ok(entry) = entry else {
-            eprintln!("Error reading directory \"{}\"", path.display());
-            continue;
-        };
-
+    let Ok(rd) = read_dir(path) else { return };
+    for entry in rd {
+        let Ok(entry) = entry else { continue };
         let path = entry.path();
         if may_process(&path) {
             callback(path);

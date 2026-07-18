@@ -13,14 +13,12 @@ pub fn app() -> Result<()> {
 
     match cli.command {
         Commands::Load { source, recursive_dirs } => load(source, recursive_dirs),
-
         Commands::LoadBy { source, recursive_dirs, db_path, list } => {
             load_by(source, recursive_dirs, db_path, list)
         }
         Commands::Index { source, recursive_dirs, db_path, portable, reset } => {
             index(source, recursive_dirs, db_path, portable, reset)
         }
-
         Commands::List { source, recursive_dirs, db_path, export_font_list, export_font_files } => {
             list(source, recursive_dirs, db_path, export_font_list, export_font_files)
         }
@@ -29,11 +27,9 @@ pub fn app() -> Result<()> {
 
 pub fn fontloader_app() -> Result<()> {
     let mut cli = FontLoaderCli::parse();
-
     if cli.files.is_empty() {
         cli.files.push(".".into());
     };
-
     load(cli.files, vec![])
 }
 

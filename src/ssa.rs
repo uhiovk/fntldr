@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::LazyLock;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 // this crate is very probably using tons of LLM generated code
 // I definitely don't like that, but at least it has fairly nice API
 // and there is not a single crate else that follows basic SSA specs
@@ -28,21 +28,15 @@ impl SsaFonts {
     }
 
     pub fn load(path: &Path) -> Result<Self> {
-        let content = read_to_string(path)
-            .with_context(|| format!("Error reading file \"{}\"", path.display()))?;
-
+        let content = read_to_string(path)?;
         Ok(content.parse().unwrap())
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
-            create_dir_all(dir)
-                .with_context(|| format!("Error creating directory \"{}\"", path.display()))?;
+            create_dir_all(dir)?;
         }
-
-        write(path, self.to_string())
-            .with_context(|| format!("Error writing file \"{}\"", path.display()))?;
-
+        write(path, self.to_string())?;
         Ok(())
     }
 
@@ -68,7 +62,6 @@ impl Display for SsaFonts {
         for str in self.sorted() {
             writeln!(f, "{str}")?;
         }
-
         Ok(())
     }
 }
@@ -100,7 +93,7 @@ fn extract_ssa_fonts(path: &Path) -> HashSet<String> {
     };
 
     let Ok(sub) = Script::parse(&content) else {
-        eprintln!("Error parsing (A)SSA file \"{}\"", path.display());
+        eprintln!("Error parsing SSA file \"{}\"", path.display());
         return HashSet::new();
     };
 

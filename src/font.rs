@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 use std::path::{Path, PathBuf, absolute};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use bincode::{Decode, Encode, decode_from_std_read, encode_into_std_write};
 use memmap2::Mmap;
 use ttf_parser::name_id::FULL_NAME;
@@ -29,25 +29,15 @@ impl FontProviders {
     }
 
     pub fn load(path: &Path) -> Result<Self> {
-        let mut file = File::open(path)
-            .with_context(|| format!("Error opening file \"{}\"", path.display()))?;
-
-        decode_from_std_read(&mut file, bincode::config::standard())
-            .with_context(|| format!("Error reading file \"{}\"", path.display()))
+        let mut file = File::open(path)?;
+        Ok(decode_from_std_read(&mut file, bincode::config::standard())?)
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(dir) = path.parent() {
-            create_dir_all(dir)
-                .with_context(|| format!("Error creating directory \"{}\"", path.display()))?;
+            create_dir_all(dir)?;
         }
-
-        let mut file = File::create(path)
-            .with_context(|| format!("Error opening file \"{}\"", path.display()))?;
-
-        encode_into_std_write(self, &mut file, bincode::config::standard())
-            .with_context(|| format!("Error writing file \"{}\"", path.display()))?;
-
+        encode_into_std_write(self, &mut File::create(path)?, bincode::config::standard())?;
         Ok(())
     }
 
