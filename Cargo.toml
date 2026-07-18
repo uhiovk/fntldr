@@ -4,19 +4,19 @@ version = "0.3.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.102"
-ass-core = "0.1.1"
+anyhow = "1.0.103"
+ass-core = "0.1.2"
 bincode = "2.0.1"
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.6.2", features = ["derive"] }
 ctrlc = { version = "3.5.2", features = ["termination"] }
 dirs = "6.0.0"
-memmap2 = "0.9.10"
-regex = "1.12.3"
-tempfile = "3.27.0"
+memmap2 = "0.9.11"
+regex = "1.13.1"
 ttf-parser = "0.25.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-yeslogic-fontconfig-sys = "6.0.0"
+tempfile = "3.27.0"
+yeslogic-fontconfig-sys = "6.0.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_Graphics_Gdi"] }
