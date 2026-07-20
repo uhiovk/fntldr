@@ -28,8 +28,7 @@ impl SsaFonts {
     }
 
     pub fn load(path: &Path) -> Result<Self> {
-        let content = read_to_string(path)?;
-        Ok(content.parse().unwrap())
+        Ok(read_to_string(path)?.parse().unwrap())
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {

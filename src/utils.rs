@@ -1,7 +1,5 @@
-use std::collections::HashSet;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
-use std::sync::LazyLock;
 
 pub fn walk_dir(
     path: &Path,
@@ -35,20 +33,17 @@ pub fn get_db_path(path: Option<&Path>) -> PathBuf {
 }
 
 pub fn parse_style(name: &str) -> (&str, &str) {
-    static STYLE_NAMES: LazyLock<HashSet<&str>> = LazyLock::new(|| {
-        // only consider some common style names
-        [
-            "thin", "extralight", "ultralight", "light", "regular", "normal", "medium", "semibold",
-            "demibold", "bold", "extrabold", "ultrabold", "heavy", "black", "italic", "oblique",
-        ]
-        .into()
-    });
+    // only consider some common style names
+    static STYLES: [&str; 16] = [
+        "thin", "extralight", "ultralight", "light", "regular", "normal", "medium", "semibold",
+        "demibold", "bold", "extrabold", "ultrabold", "heavy", "black", "italic", "oblique",
+    ];
 
     let mut word_start = name.len();
 
     for (idx, _) in name.rmatch_indices(' ') {
         let word = &name[idx + 1..word_start];
-        if word.is_empty() || STYLE_NAMES.contains(word.to_ascii_lowercase().as_str()) {
+        if word.is_empty() || STYLES.contains(&word.to_ascii_lowercase().as_str()) {
             word_start = idx;
         } else {
             break;

@@ -5,6 +5,7 @@ mod system;
 mod utils;
 
 use std::path::PathBuf;
+use std::{io, process};
 
 use crate::app::*;
 
@@ -29,7 +30,7 @@ fn main() {
     if let Err(error) = result {
         eprintln!("{}\n", error);
         eprintln!("Press enter to exit...");
-        let _ = std::io::stdin().read_line(&mut String::new());
-        std::process::exit(1);
+        let _ = io::stdin().read_line(&mut String::new());
+        process::exit(1);
     }
 }

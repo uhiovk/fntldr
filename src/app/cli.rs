@@ -18,9 +18,8 @@ pub enum Commands {
     Load {
         /// Font files or directories containing them
         source: Vec<PathBuf>,
-
         /// Recursively scan these directories
-        #[arg(short, long = "recurse", value_name = "DIRECTORY")]
+        #[arg(short, long = "recursive", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
     },
 
@@ -28,15 +27,12 @@ pub enum Commands {
     LoadBy {
         /// Subtitle files or directories containing them
         source: Vec<PathBuf>,
-
         /// Recursively scan these directories
-        #[arg(short, long = "recurse", value_name = "DIRECTORY")]
+        #[arg(short, long = "recursive", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
-
         /// Specify database file
         #[arg(short, long = "db")]
         db_path: Option<PathBuf>,
-
         /// Load fonts listed in ./fonts.txt
         #[arg(short, long)]
         list: bool,
@@ -46,19 +42,15 @@ pub enum Commands {
     Index {
         /// Font files or directories containing them
         source: Vec<PathBuf>,
-
         /// Recursively scan these directories
-        #[arg(short, long = "recurse", value_name = "DIRECTORY")]
+        #[arg(short, long = "recursive", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
-
         /// Specify database file
         #[arg(short, long = "db")]
         db_path: Option<PathBuf>,
-
         /// Do not translate paths to absolute
         #[arg(short = 'p', long = "portable")]
         portable: bool,
-
         /// Reset and rebuild the database
         #[arg(short = 'b', long)]
         reset: bool,
@@ -68,27 +60,22 @@ pub enum Commands {
     List {
         /// Subtitle files or directories containing them
         source: Vec<PathBuf>,
-
         /// Recursively scan these directories
-        #[arg(short, long = "recurse", value_name = "DIRECTORY")]
+        #[arg(short, long = "recursive", value_name = "DIRECTORY")]
         recursive_dirs: Vec<PathBuf>,
-
         /// Treat fonts in database as installed
         #[arg(short, long = "db")]
         db_path: Option<Option<PathBuf>>,
-
         /// Export font list to ./fonts.txt
         #[arg(short = 'l', long = "list")]
         export_font_list: bool,
-
         /// Copy installed fonts to specified directory
         #[arg(short = 'x', long = "export", value_name = "TARGET")]
         export_font_files: Option<PathBuf>,
     },
 }
 
-// FontLoader mode
-
+/// fntldr FontLoader mode
 #[derive(Parser)]
 #[command(version)]
 pub struct FontLoaderCli {
@@ -97,8 +84,7 @@ pub struct FontLoaderCli {
     pub files: Vec<PathBuf>,
 }
 
-// FontLoaderSub mode
-
+/// fntldr FontLoaderSub mode
 #[derive(Parser)]
 #[command(version)]
 pub struct FontLoaderSubCli {
@@ -107,8 +93,7 @@ pub struct FontLoaderSubCli {
     pub dirs: Vec<PathBuf>,
 }
 
-// ListAssFonts mode
-
+/// fntldr ListAssFonts mode
 #[derive(Parser)]
 #[command(version)]
 pub struct ListAssFontsCli {

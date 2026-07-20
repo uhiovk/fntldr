@@ -38,13 +38,7 @@ impl FindFont for Finder {
         let mut found_match = false;
 
         unsafe {
-            EnumFontFamiliesExW(
-                hdc,
-                &logfont,
-                Some(callback),
-                &mut found_match as *mut _ as LPARAM,
-                0,
-            );
+            EnumFontFamiliesExW(hdc, &logfont, Some(callback), &raw mut found_match as LPARAM, 0);
             if ReleaseDC(std::ptr::null_mut(), hdc) == 0 {
                 bail!("ReleaseDC failed");
             }
